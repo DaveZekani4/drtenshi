@@ -1,10 +1,12 @@
 import { list } from '@vercel/blob';
+import { blobCreds } from './_lib.js';
 // returns the newest saved content.json (or {} if nothing saved yet)
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store, max-age=0');
-  if (!process.env.BLOB_READ_WRITE_TOKEN) return res.status(200).json({});
+  const c = blobCreds();
+  if (c.mode === 'none') return res.status(200).json({});
   try {
-    const { blobs } = await list({ prefix: 'content/' });
+    const { blobs } = await list({ prefix: 'content/', ...c.opts });
     if (!blobs.length) return res.status(200).json({});
     blobs.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
     const r = await fetch(blobs[0].url, { cache: 'no-store' });

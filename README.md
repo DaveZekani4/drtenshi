@@ -29,9 +29,14 @@ A Limbo-style ninja game in the browser, with a hidden admin panel at `/admin`.
 
 ### 3. Turn on storage (so the admin panel can save)
 1. In your Vercel project, open the **Storage** tab.
-2. Click **Create Database**, choose **Blob**, and click **Continue**. If it asks about access, choose **Public**.
-3. Give it any name, then **connect it to the drtenshi project** (all environments).
-4. Open the **Deployments** tab. On the newest deployment, tap **⋯** and then **Redeploy**. This step matters: without it, saving won't work.
+2. Click **Create Storage** (sometimes labelled **Create Database**), choose **Blob**, then **Continue**.
+3. Set access to **Public**.
+4. Give it any name.
+5. **Tick "Add a read-write token env var to this connection".** This step is essential: the admin panel can't save without it.
+6. Click **Create**.
+7. Open the **Deployments** tab. On the newest deployment, tap **⋯** and then **Redeploy**.
+
+Missed the tick box? Open the Blob store, go to its **Projects** tab, tap **⋯** next to your project, choose **Update Project Connection**, tick the box, save, then Redeploy.
 
 ### 4. Fill in your content
 1. Open `https://YOUR-SITE.vercel.app/admin`.

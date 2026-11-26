@@ -6,7 +6,7 @@ const clone = o => JSON.parse(JSON.stringify(o));
 const MOCK = location.hostname === 'localhost' && new URLSearchParams(location.search).has('mock');
 let PASS = '';
 try { PASS = sessionStorage.getItem('tenshi_pass') || ''; } catch (e) { }
-let C = clone(DEFAULT_CONTENT), dirty = false, toRemove = [], busy = 0;
+let C = clone(DEFAULT_CONTENT), dirty = false, toRemove = [], busy = 0, MODE = 'token';
 
 function merge(dst, src) {
   if (!src || typeof src !== 'object') return dst;
@@ -40,8 +40,9 @@ async function login(p) {
   try { sessionStorage.setItem('tenshi_pass', p); localStorage.setItem('tenshi_dev', '1'); } catch (e) { }
   $('#login').classList.add('hide'); $('#app').classList.remove('hide');
   const chip = $('#store');
-  if (j.storage) { chip.textContent = 'storage connected'; chip.className = 'chip ok'; }
-  else { chip.textContent = 'storage not connected'; chip.className = 'chip bad'; status('Storage is not connected yet. See step 3 of the setup guide. Saving won’t work until then.', 'err'); }
+  MODE = j.mode || 'token';
+  if (j.storage) { chip.textContent = 'storage connected'; chip.className = 'chip ok'; chip.title = 'connection: ' + MODE; }
+  else { chip.textContent = 'storage not connected'; chip.className = 'chip bad'; status('Storage is not connected yet. See step 3 of the setup guide. Found: ' + ((j.found || []).join(', ') || 'nothing'), 'err'); }
   await load();
 }
 $('#lf').addEventListener('submit', async e => {
@@ -71,7 +72,6 @@ function bind() {
 }
 
 /* ---------- uploads ---------- */
-let blobUpload = null;
 async function uploadFile(file, slot, onProg) {
   const safe = file.name.replace(/[^\w.\-]+/g, '_').slice(-80);
   const pathname = `media/${slot}-${safe}`;
@@ -79,10 +79,11 @@ async function uploadFile(file, slot, onProg) {
     const r = await fetch('/api/mock-upload?name=' + encodeURIComponent(pathname), { method: 'PUT', body: file });
     const j = await r.json(); onProg && onProg(100); return { url: j.url };
   }
-  if (!blobUpload) blobUpload = (await import('/blob-client.js')).upload;
-  return await blobUpload(pathname, file, {
+  const mod = await import('/blob-client.js');
+  const fn = MODE === 'oidc' ? mod.uploadPresigned : mod.upload;
+  return await fn(pathname, file, {
     access: 'public', handleUploadUrl: '/api/upload', clientPayload: PASS, contentType: file.type || undefined,
-    multipart: file.size > 15 * 1024 * 1024, onUploadProgress: e => onProg && onProg(e.percentage)
+    multipart: MODE !== 'oidc' && file.size > 15 * 1024 * 1024, onUploadProgress: e => onProg && onProg(e.percentage)
   });
 }
 function renderFile(box) {
