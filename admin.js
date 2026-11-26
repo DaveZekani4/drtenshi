@@ -1,4 +1,4 @@
-import { DEFAULT_CONTENT } from '/defaults.js';
+import { DEFAULT_CONTENT, SOUND_SLOTS } from '/defaults.js';
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
@@ -67,6 +67,7 @@ function bind() {
   }
   for (const el of $$('[data-file]')) renderFile(el);
   const ph = $('[data-photos]'); renderPhotosPicker(ph); renderPhotos();
+  renderSounds();
 }
 
 /* ---------- uploads ---------- */
@@ -148,6 +149,47 @@ function renderPhotos() {
     const r = document.createElement('button'); r.textContent = '›'; r.type = 'button'; r.onclick = () => { if (i < list.length - 1) { [list[i + 1], list[i]] = [list[i], list[i + 1]]; markDirty(); renderPhotos(); } };
     mv.append(l, r); d.append(x, mv); g.appendChild(d);
   });
+}
+
+/* ---------- sounds ---------- */
+function renderSounds() {
+  const box = $('#sounds'); box.textContent = '';
+  if (!C.sounds || typeof C.sounds !== 'object') C.sounds = {};
+  for (const [slot, label] of SOUND_SLOTS) box.appendChild(soundRow(slot, label));
+}
+function soundRow(slot, label) {
+  const row = document.createElement('div'); row.className = 'snd';
+  const draw = () => {
+    row.textContent = '';
+    const v = C.sounds[slot], hasFile = v && typeof v === 'object' && v.url;
+    const lab = document.createElement('div'); lab.className = 'lab'; lab.textContent = label; row.appendChild(lab);
+    if (!hasFile) {
+      const sel = document.createElement('select');
+      for (const [val, txt] of [['on', 'Built-in'], ['off', 'Off']]) { const o = document.createElement('option'); o.value = val; o.textContent = txt; sel.appendChild(o); }
+      sel.value = v === 'off' ? 'off' : 'on';
+      sel.onchange = () => { C.sounds[slot] = sel.value; markDirty(); };
+      row.appendChild(sel);
+    } else { const fn = document.createElement('span'); fn.className = 'fn'; fn.textContent = v.name || 'your file'; row.appendChild(fn); }
+    const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'audio/*,.mp3,.m4a,.wav,.ogg'; inp.style.display = 'none';
+    const up = document.createElement('button'); up.type = 'button'; up.className = 'btn sm'; up.textContent = hasFile ? 'Replace' : 'Upload'; up.onclick = () => inp.click();
+    row.append(up, inp);
+    if (hasFile) {
+      const rm = document.createElement('button'); rm.type = 'button'; rm.className = 'btn sm danger'; rm.textContent = 'Remove';
+      rm.onclick = () => { toRemove.push(v.url); C.sounds[slot] = 'on'; markDirty(); draw(); }; row.appendChild(rm);
+      const a = document.createElement('audio'); a.controls = true; a.preload = 'none'; a.src = v.url; row.appendChild(a);
+    }
+    inp.onchange = async () => {
+      const f = inp.files && inp.files[0]; if (!f) return;
+      up.disabled = true; busy++; status('Uploading ' + f.name + '…', 'dirty');
+      try {
+        const res = await uploadFile(f, 'sound-' + slot);
+        const prev = C.sounds[slot]; if (prev && prev.url) toRemove.push(prev.url);
+        C.sounds[slot] = { url: res.url, name: f.name, type: f.type || '' };
+        busy--; draw(); await save('Sound uploaded and saved ✓');
+      } catch (e) { busy--; up.disabled = false; status('Upload failed: ' + e.message, 'err'); }
+    };
+  };
+  draw(); return row;
 }
 
 /* ---------- save ---------- */

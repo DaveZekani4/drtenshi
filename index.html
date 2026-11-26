@@ -180,7 +180,8 @@ const DEFAULT_CONTENT = {
     lines: ['You are strong, ninja.', 'The lost scrolls of AI 愛 have been digitalised.'],
     video: null, videoLink: '', driveLink: '', photos: [], birthday: 'Happy Birthday, Mama'
   },
-  music: { title: null, l1: null, l2: null, l3: null, l4: null, l5: null, ending: null }
+  music: { title: null, l1: null, l2: null, l3: null, l4: null, l5: null, ending: null },
+  sounds: { herHurt: 'off', herShout: 'off', fairyDie: 'off', ninjaDie: 'off', bigDie: 'off', joeLaugh: 'off', joeScream: 'off' }
 };
 let CONTENT = JSON.parse(JSON.stringify(DEFAULT_CONTENT));
 function mergeContent(dst, src) {
@@ -342,6 +343,7 @@ function unlockAudio() {
     } catch (e) { AC = null; }
   }
   if (AC && AC.state === 'suspended') AC.resume();
+  if (AC && !SAMPLES._loaded) { SAMPLES._loaded = true; loadSamples(); }
   if (!audioUnlocked) {
     audioUnlocked = true;
     const sw = silentWav();
@@ -458,7 +460,57 @@ const SFX = {
   kifull: () => { [784, 988, 1175].forEach((f, i) => osc('sine', f, f, .6, .12, i * .08)); },
   heart: () => { osc('sine', 523, 523, .2, .15); osc('sine', 784, 784, .3, .12, .1); }
 };
-function sfx(n) { try { SFX[n] && SFX[n](); } catch (e) { } }
+/* every sound slot the admin can switch off or replace with a file.
+   keys: built-in sounds this slot covers. extra: built-in layers that are dropped when a file replaces the slot */
+const SOUND_SLOTS = [
+  ['slash', 'Her sword swing', ['slash', 'slash2']],
+  ['hit', 'Sword hitting an enemy', ['hit'], ['cut', 'thunk']],
+  ['heavyHit', 'Hitting a big fairy or MR JOE', ['heavy']],
+  ['hurt', 'Dr Tenshi gets hit', ['hurt']],
+  ['herHurt', 'Dr Tenshi\'s "ah!" when hit', ['ow']],
+  ['herShout', 'Dr Tenshi\'s battle shout (combo finishers)', ['kiai']],
+  ['die', 'Dr Tenshi falls', ['die']],
+  ['jump', 'Jump', ['jump']], ['dash', 'Dash', ['dash']], ['throw', 'Throwing a shuriken', ['throw']],
+  ['kill', 'Any enemy defeated (thud)', ['kill']],
+  ['fairyDie', 'Fairy / pixie / moth fairy cry', ['cryFairy', 'cryPixie']],
+  ['ninjaDie', 'Ninja fairy cry', ['cryNinja']],
+  ['bigDie', 'Big fairy cry', ['cryBig']],
+  ['wolf', 'Wolf', ['yelp', 'growl']], ['crow', 'Crow', ['caw']],
+  ['joeLaugh', 'MR JOE laughs (with every taunt)', ['laugh']],
+  ['joeRoar', 'MR JOE roars', ['roar']],
+  ['joeScream', 'MR JOE defeated scream', ['bossScream']],
+  ['ogreRoar', 'Ogre roar', ['ogreRoar'], ['ogreRise']],
+  ['ogreCall', 'Summon an Ogre button appears', ['ogreCall']],
+  ['wind', 'Wind magic', ['wind']], ['fire', 'Fire magic', ['fire']], ['ice', 'Ice magic', ['ice']], ['bolt', 'Lightning magic', ['bolt']],
+  ['pickup', 'Picking up a shuriken', ['pick']], ['box', 'Box breaks', ['box'], ['boxhit']],
+  ['reveal', 'Letter appears', ['reveal']], ['boom', 'Cake explosion', ['boom']], ['cp', 'Lantern checkpoint', ['cp']]
+];
+const SYNTH_SLOT = {};
+for (const [slot, , keys, extra] of SOUND_SLOTS) { for (const k of keys) SYNTH_SLOT[k] = { slot, primary: true }; for (const k of (extra || [])) SYNTH_SLOT[k] = { slot, primary: false }; }
+const SAMPLES = {};
+function loadSamples() {
+  if (!AC || !CONTENT.sounds) return;
+  for (const slot in CONTENT.sounds) {
+    const url = mediaUrl(CONTENT.sounds[slot]); if (!url || (SAMPLES[slot] && SAMPLES[slot].url === url)) continue;
+    const S = SAMPLES[slot] = { url };
+    fetch(url).then(r => r.arrayBuffer()).then(ab => new Promise((res, rej) => AC.decodeAudioData(ab, res, rej))).then(buf => { S.buf = buf; })
+      .catch(() => { const a = new Audio(url); a.preload = 'auto'; S.el = a; });
+  }
+}
+function playSample(S) {
+  if (save.muted) return;
+  if (S.buf) { const src = AC.createBufferSource(), g = AC.createGain(); src.buffer = S.buf; src.playbackRate.value = rand(.96, 1.04); g.gain.value = .9; src.connect(g); g.connect(sfxBus); src.start(); }
+  else if (S.el) { const a = S.el.cloneNode(); a.volume = .85; a.play().catch(() => { }); }
+}
+function sfx(n) {
+  const m = SYNTH_SLOT[n];
+  if (m) {
+    const v = CONTENT.sounds && CONTENT.sounds[m.slot];
+    if (v === 'off') return;
+    if (mediaUrl(v)) { const S = SAMPLES[m.slot]; if (m.primary && S && (S.buf || S.el)) playSample(S); return; }
+  }
+  try { SFX[n] && SFX[n](); } catch (e) { }
+}
 /* ambience: wind / rain bed */
 let amb = null;
 function setAmbience(kind) {
@@ -3126,7 +3178,7 @@ PlayScene.prototype.updateOgreOffer = function (dt) {
   if (blocked || this.ogreCd > 0) return;
   const cx = p.x + 8, near = this.targets().filter(e => Math.abs(e.x + e.w / 2 - cx) < 300 && Math.abs(e.y + e.h - (p.y + p.h)) < 220).length;
   const bossFight = this.boss && !this.boss.dead && this.locked;
-  if (near >= 3 || (p.hp <= 3 && near >= 1) || (bossFight && p.hp <= 4)) {
+  if (near >= 5 || (bossFight && p.hp <= 4)) {
     this.ogreOffer = 3; btn.classList.remove('hide'); btn.querySelector('i').style.width = '100%';
     sfx('ogreCall');
   }
@@ -3806,6 +3858,14 @@ class CardScene {
     if (q.has('boss')) { save.level = 4; save.cp = -1; first = new PlayScene(4, { devBoss: true }); }
     if (q.has('cake')) { save.level = 4; first = new PlayScene(4, { devBoss: true }); setTimeout(() => { const s = Game.scene; if (s instanceof PlayScene) { if (!s.boss) s.startBoss(); s.boss.st = 'idle'; s.boss.inv = 0; s.boss.hp = 1; s.hitBoss(5, 1); } }, 1200); }
     if (q.has('ending')) { setTimeout(showEnding, 300); }
+    if (q.has('sounds')) setTimeout(() => {
+      const o = overlay(); const m = el('div', 'menu'); m.style.maxHeight = '100%'; m.style.overflow = 'auto'; m.style.touchAction = 'pan-y';
+      m.appendChild(el('h1', '', 'sound board'));
+      m.appendChild(el('p', '', 'tap a sound to hear it as the game plays it now (built-in, off, or your file)'));
+      const grid = el('div', 'row');
+      for (const [slot, label, keys] of SOUND_SLOTS) { const v = CONTENT.sounds[slot]; grid.appendChild(btn(label + (v === 'off' ? '  (off)' : mediaUrl(v) ? '  (your file)' : ''), () => { unlockAudio(); setTimeout(() => sfx(keys[0]), 60); })); }
+      m.appendChild(grid); o.appendChild(m);
+    }, 500);
     if (q.has('reward')) { const i = clamp((parseInt(q.get('reward'), 10) || 1) - 1, 0, 3); first = new PlayScene(i); setTimeout(() => openReward(Game.scene), 800); }
   }
   Game.set(first);

@@ -14,5 +14,29 @@ export const DEFAULT_CONTENT = {
     lines: ['You are strong, ninja.', 'The lost scrolls of AI 愛 have been digitalised.'],
     video: null, videoLink: '', driveLink: '', photos: [], birthday: 'Happy Birthday, Mama'
   },
-  music: { title: null, l1: null, l2: null, l3: null, l4: null, l5: null, ending: null }
+  music: { title: null, l1: null, l2: null, l3: null, l4: null, l5: null, ending: null },
+  sounds: { herHurt: 'off', herShout: 'off', fairyDie: 'off', ninjaDie: 'off', bigDie: 'off', joeLaugh: 'off', joeScream: 'off' }
 };
+export const SOUND_SLOTS = [
+  ['slash', 'Her sword swing', ['slash', 'slash2']],
+  ['hit', 'Sword hitting an enemy', ['hit'], ['cut', 'thunk']],
+  ['heavyHit', 'Hitting a big fairy or MR JOE', ['heavy']],
+  ['hurt', 'Dr Tenshi gets hit', ['hurt']],
+  ['herHurt', 'Dr Tenshi\'s "ah!" when hit', ['ow']],
+  ['herShout', 'Dr Tenshi\'s battle shout (combo finishers)', ['kiai']],
+  ['die', 'Dr Tenshi falls', ['die']],
+  ['jump', 'Jump', ['jump']], ['dash', 'Dash', ['dash']], ['throw', 'Throwing a shuriken', ['throw']],
+  ['kill', 'Any enemy defeated (thud)', ['kill']],
+  ['fairyDie', 'Fairy / pixie / moth fairy cry', ['cryFairy', 'cryPixie']],
+  ['ninjaDie', 'Ninja fairy cry', ['cryNinja']],
+  ['bigDie', 'Big fairy cry', ['cryBig']],
+  ['wolf', 'Wolf', ['yelp', 'growl']], ['crow', 'Crow', ['caw']],
+  ['joeLaugh', 'MR JOE laughs (with every taunt)', ['laugh']],
+  ['joeRoar', 'MR JOE roars', ['roar']],
+  ['joeScream', 'MR JOE defeated scream', ['bossScream']],
+  ['ogreRoar', 'Ogre roar', ['ogreRoar'], ['ogreRise']],
+  ['ogreCall', 'Summon an Ogre button appears', ['ogreCall']],
+  ['wind', 'Wind magic', ['wind']], ['fire', 'Fire magic', ['fire']], ['ice', 'Ice magic', ['ice']], ['bolt', 'Lightning magic', ['bolt']],
+  ['pickup', 'Picking up a shuriken', ['pick']], ['box', 'Box breaks', ['box'], ['boxhit']],
+  ['reveal', 'Letter appears', ['reveal']], ['boom', 'Cake explosion', ['boom']], ['cp', 'Lantern checkpoint', ['cp']]
+];
