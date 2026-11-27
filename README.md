@@ -49,6 +49,13 @@ Missed the tick box? Open the Blob store, go to its **Projects** tab, tap **⋯*
 - When you're done testing, open the game and press **Start over** on the title screen to reset it.
 - Send her only the main link (`https://YOUR-SITE.vercel.app`). The admin page isn't linked anywhere in the game.
 
+## Chapter VI · The Evil Twin (the upgrade)
+- After she cuts the cake, the boy's eyes go violet and he reveals he's the evil twin. Then a card, then a duel. When she wins he says his last words and the white ending plays, with a button, **a little something extra**, that appears 5 seconds after the page settles.
+- **She doesn't have to replay everything.** Since she already finished the game on her phone, her title screen now shows a glowing **New · Chapter VI · 双 The Twin** button that drops her right back at the cake. Just tell her to open the same link again.
+- In the admin panel: upload the duel song under **Music → Chapter VI · The evil twin duel** (until you do, the Blossom song keeps playing), and upload the picture in the **Chapter VI · The Evil Twin** card. His speech, taunts, last words, the card text and the caption are all editable there too.
+- Test buttons: **Chapter VI** (the shortcut), **Twin duel** (straight to his reveal) and **White ending** (now with the extra button).
+- Deploying the update: replace the files in your GitHub repo with these and push. Vercel redeploys on its own and your saved content stays as it is.
+
 ## Good to know
 - **Changing the passcode:** in Vercel, open Settings → Environment Variables, add `ADMIN_PASSCODE` with your new code, then Redeploy.
 - **Phones:** the game asks her to turn the phone sideways. Her progress saves automatically on her device.

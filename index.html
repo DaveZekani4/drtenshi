@@ -111,6 +111,16 @@ body.portrait.touch #rot{display:flex}
 #title{position:fixed;inset:0;z-index:8;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0 0 max(9vh,20px) 28vw;gap:12px;pointer-events:none}
 #title > *{pointer-events:auto}
 #title .btn{min-width:210px;background:rgba(0,0,0,.25);font-size:20px}
+#title .twin{border-color:rgba(190,140,255,.8);color:#e6d8ff;box-shadow:0 0 18px rgba(170,110,255,.35);animation:twinPulse 2.4s ease-in-out infinite}
+@keyframes twinPulse{50%{box-shadow:0 0 30px rgba(170,110,255,.65)}}
+#ending .extra{margin-top:6px;opacity:0;transition:opacity 1.2s;pointer-events:none}
+#ending .extra.in{opacity:1;pointer-events:auto}
+#xtra{position:fixed;inset:0;z-index:30;background:rgba(10,6,18,.82);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:20px;opacity:0;transition:opacity .6s}
+#xtra.in{opacity:1}
+#xtra .pol{background:#fff;padding:12px 12px 14px;width:min(400px,84vw,50vh);transform:rotate(1.5deg);box-shadow:0 18px 50px rgba(0,0,0,.5)}
+#xtra .pol img{display:block;width:100%;max-height:56vh;object-fit:cover}
+#xtra .pol .ph{aspect-ratio:4/5;display:flex;align-items:center;justify-content:center;background:#ddd;color:#777;font-family:var(--fell);font-style:italic}
+#xtra .pol p{margin:12px 4px 0;font-family:var(--fell);font-style:italic;color:#333;font-size:19px;line-height:1.35;text-align:center;white-space:pre-line}
 #title .snd{min-width:0;font-size:14px;padding:6px 14px;opacity:.7}
 </style>
 </head>
@@ -119,6 +129,7 @@ body.portrait.touch #rot{display:flex}
 <div id="title" class="hide">
   <button class="btn" id="tBegin">Begin</button>
   <button class="btn hide" id="tCont">Continue</button>
+  <button class="btn twin hide" id="tTwin">New · Chapter VI · 双 The Twin</button>
   <button class="btn snd" id="tSnd">Sound: on</button>
 </div>
 <div id="touch" class="hide">
@@ -178,9 +189,17 @@ const DEFAULT_CONTENT = {
   bombedSub: "don't trust italian bakers",
   ending: {
     lines: ['You are strong, ninja.', 'The lost scrolls of AI 愛 have been digitalised.'],
-    video: null, videoLink: '', driveLink: '', photos: [], birthday: 'Happy Birthday, Mama'
+    video: null, videoLink: '', driveLink: '', photos: [], birthday: 'Happy Birthday, Mama',
+    extraLabel: 'a little something extra', extraPhoto: null, extraText: "I know you'll leave me for this nonsense boy.\nHe is the Evil Twin jsyk!! He's Italian too😭"
   },
-  music: { title: null, l1: null, l2: null, l3: null, l4: null, l5: null, ending: null },
+  twin: {
+    name: 'THE EVIL TWIN',
+    lines: ['I am the evil twin he always talks about.', 'I do all the annoying things. I fall asleep on you. I talk to the 300468373682674638 girls in the world.', 'And you cut my Italian chocolate cake.', 'Mamma mia... la mia torta. Che peccato, Dottoressa.', 'Andiamo.'],
+    taunts: ['Troppo lento, Dottoressa.', 'Sorry, I was texting another girl.', 'I fell asleep. Did you hit me?', 'Ciao, bella. Again.', 'My cake. MY CAKE.', 'You can\u2019t parry this rizz.', 'Che bella... but no.', 'He would never. I always would.'],
+    winLines: ['Guess nothing beats you, Doctor.', 'You are always right.'],
+    card: 'Dr Tenshi, defeat the evil twin to reach the true words of AI 愛'
+  },
+  music: { title: null, l1: null, l2: null, l3: null, l4: null, l5: null, twin: null, ending: null },
   sounds: { herHurt: 'off', herShout: 'off', fairyDie: 'off', ninjaDie: 'off', bigDie: 'off', joeLaugh: 'off', joeScream: 'off' }
 };
 let CONTENT = JSON.parse(JSON.stringify(DEFAULT_CONTENT));
@@ -354,7 +373,7 @@ function initMusicEls() {
   for (let i = 0; i < 2; i++) { const a = new Audio(); a.loop = true; a.preload = 'auto'; a.playsInline = true; a.setAttribute('playsinline', ''); a.volume = 0; music.els.push(a); }
 }
 function setMusic(key) {
-  const url = mediaUrl(CONTENT.music[key]);
+  const url = mediaUrl(CONTENT.music[key]) || (key === 'twin' ? mediaUrl(CONTENT.music.l5) : '');
   if (url === music.src) return;
   music.src = url;
   const old = music.els[music.cur]; music.cur ^= 1; const nu = music.els[music.cur];
@@ -455,6 +474,9 @@ const SFX = {
   fire: () => { noise(.9, .8, 'lowpass', 2600, 200, .7); osc('sawtooth', 140, 50, .7, .25); },
   ice: () => { [1760, 2350, 2790, 3520].forEach((f, i) => osc('triangle', f, f * .98, .4, .1, i * .05)); noise(.5, .35, 'highpass', 5000, 2500, 1); },
   bolt: () => { noise(.12, 1, 'highpass', 6000, 2000, .7); osc('square', 90, 40, .5, .3); noise(1.2, .5, 'lowpass', 500, 40, .5, .1); },
+  twinReveal: () => { osc('sine', 55, 40, 1.6, .7); osc('sawtooth', 110, 220, 1.4, .12, .2); noise(1.2, .3, 'bandpass', 400, 2400, 2, .2); },
+  parry: () => { osc('square', 2200, 1900, .1, .16); osc('triangle', 3300, 3000, .35, .22); noise(.1, .5, 'highpass', 5000, 3500); },
+  poof: () => { noise(.25, .4, 'bandpass', 1200, 300, 1.2); osc('sine', 600, 200, .2, .08); },
   ogreCall: () => { osc('sine', 70, 70, .5, .5); osc('sine', 70, 70, .5, .5, .35); osc('triangle', 140, 120, .4, .2, .35); },
   ogreRise: () => { noise(1.4, .7, 'lowpass', 300, 60, .6); osc('sawtooth', 55, 40, 1.2, .3); },
   kifull: () => { [784, 988, 1175].forEach((f, i) => osc('sine', f, f, .6, .12, i * .08)); },
@@ -483,6 +505,7 @@ const SOUND_SLOTS = [
   ['ogreCall', 'Summon an Ogre button appears', ['ogreCall']],
   ['wind', 'Wind magic', ['wind']], ['fire', 'Fire magic', ['fire']], ['ice', 'Ice magic', ['ice']], ['bolt', 'Lightning magic', ['bolt']],
   ['pickup', 'Picking up a shuriken', ['pick']], ['box', 'Box breaks', ['box'], ['boxhit']],
+  ['twinReveal', 'Evil twin reveal', ['twinReveal']], ['parry', 'Evil twin parries her', ['parry']], ['poof', 'Shadow clone poof', ['poof']],
   ['reveal', 'Letter appears', ['reveal']], ['boom', 'Cake explosion', ['boom']], ['cp', 'Lantern checkpoint', ['cp']]
 ];
 const SYNTH_SLOT = {};
@@ -1022,7 +1045,7 @@ function drawHuman(c, o) {
   const shift = o.state === 'dead' ? 0 : -maxFoot;
   const arms = [];
   for (let i = 0; i < 2; i++) { const [a0, a1] = P.arm[i]; const e1 = v(a0, 10.5); const el = [sx + e1[0], sy + e1[1]]; const h1 = v(a1, 10.5); arms.push([el, [el[0] + h1[0], el[1] + h1[1]]]); }
-  const col = o.flash > 0 ? '#e9e9e9' : INK;
+  const col = o.flash > 0 ? '#e9e9e9' : (o.ink || INK);
   c.save();
   c.translate(o.x, o.y + shift);
   if (o.alpha != null) c.globalAlpha *= o.alpha;
@@ -1133,12 +1156,12 @@ function drawHuman(c, o) {
   }
   if (o.hat === 'kasa') { c.beginPath(); c.moveTo(hx - hr * 1.9, hy - hr * .3); c.lineTo(hx, hy - hr * 1.6); c.lineTo(hx + hr * 1.9, hy - hr * .3); c.closePath(); c.fill(); }
   // eyes
-  if (o.eyes) {
+  if (o.eyes && !o.noEyes) {
     const ex = hx + f * hr * .35, ey = hy - hr * .05, er = (o.eyeR || 1.25) * S;
     const g = o.eyes === 'dim' ? .35 : 1;
     c.globalAlpha *= g;
-    if (o.eyes !== 'dim') c.drawImage(SPR.glow, ex - er * 5 + f * er, ey - er * 5, er * 10, er * 10);
-    c.fillStyle = '#fff';
+    if (o.eyes !== 'dim') c.drawImage(o.eyeCol ? glowOf(o.eyeCol) : SPR.glow, ex - er * 5 + f * er, ey - er * 5, er * 10, er * 10);
+    c.fillStyle = o.eyeCol ? `rgb(${o.eyeCol})` : '#fff';
     c.beginPath(); c.arc(ex, ey, er, 0, TAU); c.fill();
     c.beginPath(); c.arc(ex + f * er * 2.6, ey, er * .9, 0, TAU); c.fill();
     if (o.eyes === 'slit') { c.fillRect(ex - er * 1.5, ey - er * .4, er * 5, er * .8); }
@@ -1469,9 +1492,10 @@ const CHAPTERS = [
   { kan: '罠', name: 'Traps', theme: 'saw', music: 'l2', reward: 'letter2' },
   { kan: '雪', name: 'Snow', theme: 'snow', music: 'l3', reward: 'verses' },
   { kan: '雨', name: 'Rain', theme: 'rain', music: 'l4', reward: 'spotify' },
-  { kan: '桜', name: 'Blossom', theme: 'bloom', music: 'l5', reward: 'boss' }
+  { kan: '桜', name: 'Blossom', theme: 'bloom', music: 'l5', reward: 'boss' },
+  { kan: '双', name: 'The Twin', theme: 'bloom', music: 'l5', reward: 'twin' }
 ];
-const NUMERALS = ['I', 'II', 'III', 'IV', 'V'];
+const NUMERALS = ['I', 'II', 'III', 'IV', 'V', 'VI'];
 
 function Builder(theme, seed) {
   const L = { theme, solids: [], traps: [], spawns: [], decor: [], cps: [], hints: [], pits: [], box: null, scroll: null, arena: null, width: 0, deathY: 700 };
@@ -1699,10 +1723,21 @@ class PlayScene {
     this.p = this.mkPlayer(sx, sy);
     this.camX = clamp(this.p.x - W * .4, 0, L.width - W); this.camY = clamp(this.p.y - 330, -400, 40);
     this.boss = null; this.locked = false; this.bossDead = false; this.bossTitle = 0;
-    save.started = true; save.level = idx; writeSave();
+    this.noSave = !!opts.twinStart;
+    if (!this.noSave) { save.started = true; save.level = idx; writeSave(); }
     setMusic(this.ch.music); setAmbience(this.th.amb);
     showControls(true);
     if (DEV && opts.devBoss && L.arena) { this.p.x = L.arena.x0 - 200; this.p.y = L.arena.y - 50; }
+    if (opts.twinStart) {   // Chapter VI shortcut: straight to the cake
+      const ar = L.arena; this.enemies = []; if (L.scroll) L.scroll.got = true;
+      this.p.x = ar.x0 + 260; this.p.y = ar.y - 44; this.p.face = 1; this.p.safe = { x: this.p.x, y: this.p.y };
+      this.bossDead = true; this.mode = 'cut';
+      this.walls = [{ x: ar.x0 - 40, y: -800, w: 40, h: 2000, t: 0, wall: true, off: true }, { x: ar.x1, y: -800, w: 40, h: 2000, t: 0, wall: true, off: true }]; L.solids.push(...this.walls);
+      this.boy = { x: this.p.x + 480, y: ar.y - 56, w: 18, h: 56, vx: 0, vy: 0, face: -1, t: 0, st: 'walk', onGround: false };
+      this.cut = { t: 0, step: 'walkin', line: 0, chars: 0 };
+      this.camX = clamp(this.p.x + 60 - W / 2, 0, L.width - W); this.camY = clamp(this.p.y - 320, -420, 30);
+      showControls(false);
+    }
   }
   mkPlayer(x, y) {
     return {
@@ -1765,7 +1800,7 @@ class PlayScene {
 
   updatePlayer(dt) {
     const p = this.p, L = this.L;
-    for (const k of ['rage', 'inv', 'hurtT', 'atkT', 'atkCd', 'dashT', 'dashCd', 'throwT', 'throwCd', 'coyote', 'jumpBuf', 'comboT', 'stuck', 'drop']) if (p[k] > 0) p[k] = Math.max(0, p[k] - dt);
+    for (const k of ['slowT', 'rage', 'inv', 'hurtT', 'atkT', 'atkCd', 'dashT', 'dashCd', 'throwT', 'throwCd', 'coyote', 'jumpBuf', 'comboT', 'stuck', 'drop']) if (p[k] > 0) p[k] = Math.max(0, p[k] - dt);
     if (p.dead) {
       p.deadT += dt; p.vy = Math.min(MAXFALL, p.vy + GRAV * dt); p.vx *= .95; moveBody(p, dt, L.solids);
       if (p.deadT > 1.25) this.respawn();
@@ -1788,7 +1823,7 @@ class PlayScene {
     else {
       const slow = p.atkT > 0 && p.onGround ? .3 : 1;
       const ice = p.ground && p.ground.ice;
-      const target = dir * RUN * slow, acc = p.onGround ? (ice ? 520 : 2600) : 1700;
+      const target = dir * RUN * slow * (p.slowT > 0 ? .55 : 1), acc = p.onGround ? (ice ? 520 : 2600) : 1700;
       if (dir === 0 && p.onGround) p.vx = approach(p.vx, 0, (ice ? 260 : 3200) * dt); else p.vx = approach(p.vx, target, acc * dt);
       if (p.hurtT > 0) p.vx = approach(p.vx, 0, 400 * dt);
       if (dir && p.atkT <= 0) p.face = dir;
@@ -1879,11 +1914,13 @@ class PlayScene {
     const cp = this.cpi >= 0 ? L.cps[this.cpi] : null;
     let sx = 120, sy = 440;
     if (cp) { sx = cp.x; sy = cp.y; } else { const g = L.solids.find(s => s.x <= sx && s.x + s.w > sx && !s.wall); sy = g ? g.y : 440; }
+    if (this.boss && this.boss.twin && L.arena) { sx = L.arena.x0 + 160; sy = L.arena.y; }
     const np = this.mkPlayer(sx, sy); np.face = 1; this.picking = false; this.magic = []; this.ogre = null;
     this.p = np; this.mode = 'play';
     if (save.stars < 3) save.stars = 3;
     for (const e of this.enemies) if (!e.dead) { e.flying = false; e.seen = false; e.x = e.homeX; e.y = e.homeY; e.vx = e.vy = 0; e.st = e.d.fly ? 'hover' : 'patrol'; e.stT = 1; e.hp = e.maxHp; }
-    if (this.boss && !this.boss.dead) { this.boss.hp = Math.min(this.boss.maxHp, this.boss.hp + 10); this.boss.x = this.L.arena.x1 - 260; this.boss.st = 'idle'; this.boss.stT = 1.5; this.boss.hidden = false; this.proj = []; }
+    if (this.boss && !this.boss.dead && this.boss.twin) { const b = this.boss; b.hp = Math.min(b.maxHp, b.hp + 12); b.x = this.L.arena.x1 - 220; b.st = 'intro'; b.stT = 1.2; this.enemies = this.enemies.filter(e => !e.d.clone); this.magic = this.magic.filter(m => !m.hostile); }
+    else if (this.boss && !this.boss.dead) { this.boss.hp = Math.min(this.boss.maxHp, this.boss.hp + 10); this.boss.x = this.L.arena.x1 - 260; this.boss.st = 'idle'; this.boss.stT = 1.5; this.boss.hidden = false; this.proj = []; }
     this.proj = this.proj.filter(q => q.owner === 'p');
     if (this.deathsHere >= 3) { toast(pick(CONTENT.encourage), 3.2); this.deathsHere = 1; }
     this.camX = clamp(np.x - W * .4, this.locked ? this.L.arena.x0 - 10 : 0, this.L.width - W);
@@ -1909,7 +1946,7 @@ class PlayScene {
   killEnemy(e, dir) {
     e.dead = true; e.deadT = 0; e.vx = dir * 160; e.vy = -260; this.kills++; this.addKi(14);
     if (e.frozen > 0) { e.frozen = 0; sfx('ice'); for (let i = 0; i < 18; i++) fx({ k: 'shard', x: e.x + e.w / 2, y: e.y + e.h / 2, vx: rand(-300, 300), vy: rand(-400, -80), g: 1300, life: rand(.5, 1), r: rand(2, 5), rot: rand(0, TAU), vr: rand(-10, 10) }); }
-    sfx('kill'); sfx({ spear: 'cryFairy', thrower: 'cryPixie', darter: 'cryFairy', ninja: 'cryNinja', brute: 'cryBig', wolf: 'yelp', crow: 'caw' }[e.type] || 'cryFairy'); fxInk(e.x + e.w / 2, e.y + e.h / 2, 18, dir, 300); this.shake(5, .2);
+    sfx('kill'); if (e.d.clone) { this.poof(e.x + e.w / 2, e.y + e.h / 2); e.deadT = 9; } else sfx({ spear: 'cryFairy', thrower: 'cryPixie', darter: 'cryFairy', ninja: 'cryNinja', brute: 'cryBig', wolf: 'yelp', crow: 'caw' }[e.type] || 'cryFairy'); fxInk(e.x + e.w / 2, e.y + e.h / 2, 18, dir, 300); this.shake(5, .2);
     if (e.d.wings) { sfx('pick'); for (let i = 0; i < 14; i++) fx({ k: 'glow', x: e.x + e.w / 2 + rand(-10, 10), y: e.y + rand(0, e.h), vx: rand(-60, 60), vy: rand(-140, -40), g: -40, life: rand(.6, 1.3), r: rand(4, 9) }); }
     const n = randi(e.d.drops[0], e.d.drops[1]);
     for (let i = 0; i < n; i++) this.picks.push({ k: 'star', x: e.x + e.w / 2, y: e.y + e.h / 2, vx: rand(-160, 160), vy: rand(-420, -200), w: 12, h: 12, age: 0 });
@@ -1932,6 +1969,7 @@ class PlayScene {
       if (e.frozen > 0) { e.frozen -= dt; e.vx = 0; if (e.flying) { e.vy = 0; continue; } if (!e.d.fly) { e.vy = Math.min(MAXFALL, e.vy + GRAV * dt); moveBody(e, dt, L.solids); } else e.vy = 0; continue; }
       e.stT -= dt; e.cd -= dt; if (e.guardT > 0) e.guardT -= dt;
       if (e.d.animal === 'crow') { this.aiCrow(e, dt, dx, alive); continue; }
+      if (e.d.clone) { if (e.st === 'hurt' && e.stT <= 0) e.st = 'chase'; if (e.st !== 'hurt') this.aiClone(e, dt, dx, adx, alive); e.vy = Math.min(MAXFALL, e.vy + GRAV * dt); moveBody(e, dt, L.solids); continue; }
       // fairies that have spotted her take to the air and chase her if she runs
       if (alive && adx < e.d.aggro && Math.abs(pfeet - (e.y + e.h)) < 160) e.seen = true;
       if (e.seen && adx > 1700) { e.seen = false; }
@@ -2070,8 +2108,9 @@ class PlayScene {
     this.boss = b; this.bossTitle = 3.4; this.bossTitleText = ['MR JOE', 'keeper of the ninja fairies']; this.ki = Math.max(this.ki, 60);
     sfx('roar'); this.shake(12, .6); this.bossSay(CONTENT.taunts[0] || '', 2.6);
   }
-  bossSay(s, t = 1.8) { if (this.boss && s) { this.boss.say = s; this.boss.sayT = Math.max(t, Math.min(4, 1.2 + s.length * .045)); if (!this.boss.dead) sfx('laugh'); } }
+  bossSay(s, t = 1.8) { if (this.boss && s) { this.boss.say = s; this.boss.sayT = Math.max(t, Math.min(4, 1.2 + s.length * .045)); if (!this.boss.dead && !this.boss.twin) sfx('laugh'); } }
   hitBoss(dmg, dir) {
+    if (this.boss && this.boss.twin) return this.hitTwin(dmg, dir);
     const b = this.boss; if (b.inv > 0 || b.st === 'intro' || b.st === 'transform' || b.dead) return;
     this.addKi(5);
     b.hp -= dmg; b.flash = .1; b.inv = .07; sfx('heavy'); sfx('cut'); fxInk(b.x + b.w / 2, b.y + 40, 8, dir); fxSpark(b.x + b.w / 2, b.y + 40, 5);
@@ -2098,6 +2137,7 @@ class PlayScene {
     showControls(false); $('bPause').classList.add('hide');
   }
   updateBoss(dt) {
+    if (this.boss.twin) return this.updateTwin(dt);
     const b = this.boss, p = this.p, ar = this.L.arena;
     if (b.burn > 0) b.burn -= dt;
     if (b.frozen > 0 && !b.dead) { b.frozen -= dt; dt *= .25; }
@@ -2264,6 +2304,7 @@ class PlayScene {
       const box = { x: q.x - q.r, y: q.y - q.r, w: q.r * 2, h: q.r * 2 };
       if (q.owner === 'p') {
         for (const e of this.enemies) if (!e.dead && overlap(box, e)) { q.dead = true; this.hitEnemy(e, q.dmg, sign(q.vx), 'star'); break; }
+        const tb = this.boss; if (!q.dead && tb && tb.twin && !tb.dead && overlap(box, tb) && (tb.st === 'neutral' || tb.st === 'parry' || tb.st === 'rec') && Math.random() < [0, .4, .55, .7][tb.phase]) { q.owner = 'e'; q.k = 'tstar'; q.vx = -q.vx * .95; q.life = 1.4; sfx('parry'); fxSpark(q.x, q.y, 8); continue; }
         if (!q.dead && this.boss && !this.boss.dead && !this.boss.hidden && overlap(box, this.boss)) { q.dead = true; this.hitBoss(1, sign(q.vx)); }
         const bx = this.L.box; if (!q.dead && bx && !bx.broken && overlap(box, bx)) { q.dead = true; this.hitBox(); }
       } else if (!p.dead && overlap(box, { x: p.x + 2, y: p.y + 2, w: p.w - 4, h: p.h - 4 })) {
@@ -2319,7 +2360,7 @@ class PlayScene {
       }
     }
     const b = this.boss;
-    if (b && !b.dead && !b.hidden && !p.hitSet.has(b) && overlap(hb, b)) { p.hitSet.add(b); this.hitBoss(dmg, p.face); this.addChain(); }
+    if (b && !b.dead && !b.hidden && !p.hitSet.has(b) && overlap(hb, b)) { p.hitSet.add(b); this._meleeHit = true; this.hitBoss(dmg, p.face); this._meleeHit = false; this.addChain(); }
     const bx = L.box; if (bx && !bx.broken && !p.hitSet.has(bx) && overlap(hb, bx)) { p.hitSet.add(bx); this.hitBox(); }
     for (const q2 of this.proj) if (q2.owner === 'e' && !q2.dead && q2.k !== 'pillar' && overlap(hb, { x: q2.x - q2.r, y: q2.y - q2.r, w: q2.r * 2, h: q2.r * 2 })) { q2.dead = true; fxSpark(q2.x, q2.y, 6); sfx('clang'); }
   }
@@ -2379,7 +2420,9 @@ class PlayScene {
   updateMagic(dt) {
     const p = this.p;
     for (const m of this.magic) {
+      if (m.tele > 0) { m.tele -= dt; continue; }
       m.life -= dt; m.t = (m.t || 0) + dt;
+      if (m.hostile) this.updateHostileMagic(m, dt);
       if (m.k === 'wind') {
         m.x += m.vx * dt;
         if (Math.random() < .8) fx({ k: 'cglow', col: '200,236,255', x: m.x - m.face * rand(10, 40), y: m.y + rand(-30, 30), vx: -m.face * 120, life: .35, r: rand(4, 9) });
@@ -2402,7 +2445,7 @@ class PlayScene {
         if (m.t > .25 && m.t < 1.2 && Math.random() < .7) { const tg = m.tongues.length ? pick(m.tongues) : { x: m.x, y: m.gy }; m.parts.push({ k: 'sm', x: tg.x + rand(-10, 10), y: tg.y - rand(30, 70), vx: rand(-20, 20), vy: rand(-70, -35), r: rand(10, 20), life: rand(.8, 1.4), max: 1.4 }); }
         for (const q of m.parts) { q.life -= dt; q.x += q.vx * dt; q.y += q.vy * dt; if (q.k === 'fl') { q.vx *= .9; q.vy = q.vy * .9 - 260 * dt; } else if (q.k === 'em') { q.vx += rand(-200, 200) * dt; q.vy *= .99; } else { q.vx *= .98; q.r += 14 * dt; } }
         m.parts = m.parts.filter(q => q.life > 0); m.tongues = m.tongues.filter(tg => m.t - tg.born < tg.life);
-        for (const e of this.targets()) if (!m.hit.has(e) && Math.hypot(e.x + e.w / 2 - m.x, (e.y + e.h / 2 - m.y) * 1.2) < R + e.w / 2) { m.hit.add(e); this.magicHit(e, e === this.boss ? 5 : 4, sign(e.x + e.w / 2 - m.x) || 1, 'fire'); }
+        if (!m.hostile) for (const e of this.targets()) if (!m.hit.has(e) && Math.hypot(e.x + e.w / 2 - m.x, (e.y + e.h / 2 - m.y) * 1.2) < R + e.w / 2) { m.hit.add(e); this.magicHit(e, e === this.boss ? 5 : 4, sign(e.x + e.w / 2 - m.x) || 1, 'fire'); }
       } else if (m.k === 'ice') {
         while (m.next < 11 && m.t > m.next * .045) {
           const x = m.x + m.face * (38 + m.next * 40), g = groundAt(this.L.solids, x, m.gy - 30, 160);
@@ -2414,7 +2457,7 @@ class PlayScene {
           const sp = { x, y: g.y, born: m.t, shards, glint: rand(0, 3) }; m.spikes.push(sp); sfx('rock');
           for (let i = 0; i < 3; i++) m.parts.push({ k: 'mist', x: x + rand(-14, 14), y: g.y - rand(0, 12), vx: m.face * rand(10, 50), vy: rand(-12, -2), r: rand(14, 26), life: rand(.9, 1.6), max: 1.6 });
           for (let i = 0; i < 4; i++) m.parts.push({ k: 'sp', x: x + rand(-12, 12), y: g.y - rand(4, big), vx: rand(-30, 30), vy: rand(-60, -10), r: rand(1, 2), life: rand(.4, .9), max: .9 });
-          for (const e of this.targets()) if (!m.hit.has(e) && Math.abs(e.x + e.w / 2 - x) < 30 && Math.abs(e.y + e.h - g.y) < 70) { m.hit.add(e); this.magicHit(e, e === this.boss ? 4 : 2, m.face, 'ice'); }
+          if (!m.hostile) for (const e of this.targets()) if (!m.hit.has(e) && Math.abs(e.x + e.w / 2 - x) < 30 && Math.abs(e.y + e.h - g.y) < 70) { m.hit.add(e); this.magicHit(e, e === this.boss ? 4 : 2, m.face, 'ice'); }
         }
         if (!m.shattered && m.life < .45) {
           m.shattered = true; sfx('ice');
@@ -2429,7 +2472,7 @@ class PlayScene {
   updateMisc(dt) {
     const p = this.p, L = this.L;
     // checkpoints
-    L.cps.forEach((c, i) => { if (!c.lit && !p.dead && p.x + 8 > c.x - 10) { c.lit = true; this.cpi = Math.max(this.cpi, i); save.cp = this.cpi; writeSave(); sfx('cp'); fxRing(c.x, c.y - 40, 50, .8); this.deathsHere = 0; if (p.hp < p.maxHp) p.hp = Math.min(p.maxHp, p.hp + 1); } });
+    if (!this.noSave) L.cps.forEach((c, i) => { if (!c.lit && !p.dead && p.x + 8 > c.x - 10) { c.lit = true; this.cpi = Math.max(this.cpi, i); save.cp = this.cpi; writeSave(); sfx('cp'); fxRing(c.x, c.y - 40, 50, .8); this.deathsHere = 0; if (p.hp < p.maxHp) p.hp = Math.min(p.maxHp, p.hp + 1); } });
     // hidden scroll
     const s = L.scroll;
     if (s && !s.got && !p.dead && Math.abs(p.x + 8 - s.x) < 22 && Math.abs(p.y + 22 - s.y) < 34) {
@@ -2461,6 +2504,7 @@ class PlayScene {
     const c = this.cut, p = this.p, ar = this.L.arena; c.t += dt;
     const boy = this.boy;
     if (boy) { boy.t += dt; boy.vy = Math.min(MAXFALL, (boy.vy || 0) + GRAV * dt); moveBody(boy, dt, this.L.solids); }
+    if (this.updateTwinCut(dt)) return;
     switch (c.step) {
       case 'fall': if (c.t > .8 && !c.pet) { c.pet = 1; fxPetals(this.boss.x + 20, this.boss.y + 40, 70, 360); } if (c.t > 2.6) {
           for (const w of this.walls) w.off = true;
@@ -2504,8 +2548,7 @@ class PlayScene {
         if (c.t > .3 && !c.sl) { c.sl = true; p.rage = 1.2; p.move = 'spin'; p.atkT = p.atkDur = MOVES.spin.dur; sfx('slash2'); }
         if (c.t > .45 && !c.split) { c.split = true; this.freeze = .08; this.shake(8, .3); fxSpark(boy.x - 6, boy.y + 26, 12); this.halves = [{ x: boy.x - 10, y: boy.y + 22, vx: -160, vy: -380, r: 0, vr: -6 }, { x: boy.x - 6, y: boy.y + 22, vx: 150, vy: -460, r: 0, vr: 7 }]; boy.st = 'idle'; fxDust(boy.x - 8, boy.y + 26, 10, 'rgba(240,240,240,'); }
         if (this.halves) for (const h of this.halves) { h.vy += 1600 * dt; h.x += h.vx * dt; h.y += h.vy * dt; h.r += h.vr * dt; if (h.y > ar.y - 4) { h.y = ar.y - 4; h.vy *= -.25; h.vx *= .6; h.vr *= .5; } }
-        if (c.t > 1.2) this.white = Math.min(1, this.white + dt * .55);
-        if (this.white >= 1 && !c.shown) { c.shown = true; save.finished = true; writeSave(); showEnding(); }
+        if (c.t > 1.4 && !c.revealed) { c.revealed = true; c.step = 'reveal'; c.t = 0; }
         break;
       }
     }
@@ -2522,6 +2565,7 @@ class PlayScene {
     if (this.locked && !this.bossDead) { minX = L.arena.x0 - 10; maxX = L.arena.x1 - W + 10; if (this.boss) fx2 = (p.x + 8) * .6 + (this.boss.x + this.boss.w / 2) * .4; }
     if (this.mode === 'cut' && this.boy) fx2 = (p.x + 8 + this.boy.x) / 2 + 20;
     if (this.mode === 'cut' && !this.boy && this.boss) fx2 = (p.x + 8 + this.boss.x + 20) / 2;
+    if (this.mode === 'cut' && this.boss && this.boss.twin) { minX = 0; maxX = L.width - W; }
     const tx = clamp(fx2 - W / 2, minX, Math.max(minX, maxX));
     this.camX = lerp(this.camX, tx, 1 - Math.exp(-dt * 5));
     const ty = clamp(p.y - 320, -420, 30);
@@ -2843,7 +2887,9 @@ PlayScene.prototype.draw = function (c) {
   if (this.halves) for (const h of this.halves) { c.save(); c.translate(h.x, h.y); c.rotate(h.r); c.fillStyle = INK; c.fillRect(-7, -12, 14, 12); c.fillRect(-5, -18, 10, 6); c.restore(); }
   // projectiles
   for (const q of this.proj) {
-    if (q.k === 'bstar') { const d = Math.hypot(q.vx, q.vy) || 1; c.globalAlpha = .8; c.drawImage(glowOf(JOE_RED), q.x - 16, q.y - 16, 32, 32); c.globalAlpha = 1; c.strokeStyle = `rgba(${JOE_RED},.55)`; c.lineWidth = 3; c.beginPath(); c.moveTo(q.x, q.y); c.lineTo(q.x - q.vx / d * 34, q.y - q.vy / d * 34); c.stroke(); drawStar(c, q.x, q.y, 8, q.rot, false); }
+    if (q.k === 'tstar') { c.globalAlpha = .8; c.drawImage(glowOf(TWIN_V), q.x - 16, q.y - 16, 32, 32); c.globalAlpha = 1; drawStar(c, q.x, q.y, 7, q.rot, false); }
+    else if (q.k === 'twind') { c.save(); c.globalAlpha = .7; c.drawImage(glowOf(TWIN_V), q.x - 50, q.y - 50, 100, 100); c.globalAlpha = 1; c.translate(q.x, q.y); c.scale(q.face, 1); for (let i = 0; i < 3; i++) { const r = 34 - i * 8, off = -i * 14; c.fillStyle = `rgba(${i ? '220,200,255' : '190,150,255'},${.85 - i * .2})`; c.beginPath(); c.arc(off, 0, r, -1.25, 1.25); c.arc(off - r * .45, 0, r * .82, 1.15, -1.15, true); c.closePath(); c.fill(); } c.restore(); }
+    else if (q.k === 'bstar') { const d = Math.hypot(q.vx, q.vy) || 1; c.globalAlpha = .8; c.drawImage(glowOf(JOE_RED), q.x - 16, q.y - 16, 32, 32); c.globalAlpha = 1; c.strokeStyle = `rgba(${JOE_RED},.55)`; c.lineWidth = 3; c.beginPath(); c.moveTo(q.x, q.y); c.lineTo(q.x - q.vx / d * 34, q.y - q.vy / d * 34); c.stroke(); drawStar(c, q.x, q.y, 8, q.rot, false); }
     else if (q.k === 'boulder') { c.save(); c.translate(q.x, q.y); c.rotate(q.rot * .2); c.drawImage(glowOf(JOE_RED), -40, -40, 80, 80); c.fillStyle = INK; c.beginPath(); for (let i = 0; i < 9; i++) { const a = i / 9 * TAU, r = q.r * (.8 + hash1(i * 3.3) * .3); c.lineTo(Math.cos(a) * r, Math.sin(a) * r); } c.closePath(); c.fill(); c.strokeStyle = `rgba(${JOE_RED},.8)`; c.lineWidth = 1.5; c.beginPath(); c.moveTo(-12, -4); c.lineTo(0, 3); c.lineTo(10, -8); c.moveTo(0, 3); c.lineTo(3, 15); c.stroke(); c.restore(); }
     else if (q.k === 'star') drawStar(c, q.x, q.y, 7, q.rot, true);
     else if (q.k === 'big') { c.globalAlpha = .85; c.drawImage(glowOf(JOE_RED), q.x - 44, q.y - 44, 88, 88); c.globalAlpha = 1; drawStar(c, q.x, q.y, q.r, q.rot * .6, false); c.strokeStyle = `rgba(${JOE_RED},.7)`; c.lineWidth = 1.5; c.beginPath(); c.arc(q.x, q.y, q.r * 1.15, q.rot, q.rot + 2); c.stroke(); }
@@ -2892,6 +2938,7 @@ PlayScene.prototype.drawPlayer = function (c, t) {
     x: p.x + 8, y: p.y + p.h, face: p.move === 'spin' && p.atkT > 0 && q > .28 && q < .72 ? -p.face : p.face, s: TENSHI_S, state, t: p.t, p: q, combo: p.move === 's2' || p.move === 'a2' ? 1 : 0, vx: p.vx, vy: p.vy, R: p.R, holding: p.holding, rage: p.rage > 0 || p.atkT > 0 ? 1 : 0, eyeCol: p.elemT > 0 ? p.elemCol : null,
     eyes: !(p.dead && p.deadT > .4), alpha: blink ? .55 : 1, rot: p.dead ? (this.mode === 'cut' ? p.rot : Math.min(1.4, p.deadT * 4)) : 0, rs: 13
   });
+  if (p.slowT > 0) { c.globalAlpha = Math.min(1, p.slowT) * .8; c.drawImage(glowOf('140,210,255'), p.x - 14, p.y + 24, 44, 26); for (let i = 0; i < 3; i++) drawCrystal(c, p.x + 2 + i * 6, p.y + p.h + 1, -Math.PI / 2 + (i - 1) * .5, 10, 4, 1); c.globalAlpha = 1; }
   if (p.holding) { const c2 = this.cut; drawCake(c, r.hand[0] + p.face * 4, r.hand[1] + 2, 1, t, c2 && c2.blink > 0); }
   // plunge streak + iai streak
   if (p.plunge && !p.dead) { for (let i = 0; i < 3; i++) { c.strokeStyle = `rgba(255,255,255,${.7 - i * .2})`; c.lineWidth = 2.4 - i * .6; c.beginPath(); c.moveTo(p.x + 8 + (i - 1) * 7, p.y - 70 + i * 10); c.lineTo(p.x + 8 + (i - 1) * 5, p.y + 20); c.stroke(); } }
@@ -2910,7 +2957,10 @@ PlayScene.prototype.drawEnemy = function (c, e, t) {
   const d = e.d;
   c.save();
   if (e.dead) c.globalAlpha = clamp(1 - (e.deadT - .4) / 1, 0, 1);
-  if (d.animal === 'wolf') drawWolf(c, e, t);
+  if (d.clone) { const k = clamp(e.life / .6, 0, 1); c.globalAlpha *= k; const st = e.st === 'wind' ? 'windup' : e.st === 'atk' ? 'attack' : Math.abs(e.vx) > 40 ? 'run' : 'idle';
+    const r = drawTwinBoy(c, { x: e.x + e.w / 2, y: e.y + e.h, face: e.face, state: st, p: .55, t: e.t, vx: e.vx, noEyes: true, ink: `rgba(150,100,235,${(.6 + .1 * Math.sin(t * 10)).toFixed(2)})` });
+    c.drawImage(glowOf(TWIN_V), r.head[0] + e.face * 3 - 10, r.head[1] - 9, 20, 16); if (e.st === 'atk') drawSharpSlash(c, e.x + e.w / 2 + e.face * 6, e.y + 26, e.face, -1.9, .9, .35, 44, TWIN_V); }
+  else if (d.animal === 'wolf') drawWolf(c, e, t);
   else if (d.animal === 'crow') drawCrow(c, e, t);
   else {
     let st = 'idle', q = 0;
@@ -2934,7 +2984,9 @@ PlayScene.prototype.drawEnemy = function (c, e, t) {
 PlayScene.prototype.drawBoy = function (c) {
   const b = this.boy, cut = this.cut;
   const st = b.st === 'walk' ? 'walk' : b.st === 'offer' ? 'offer' : b.st === 'hurt' ? 'hurt' : b.st === 'shy' ? 'shy' : 'idle';
+  if (b.twin) { drawTwinBoy(c, { x: b.x + 9, y: b.y + b.h, face: b.face, state: 'idle', t: b.t }); return; }
   const r = drawHuman(c, { x: b.x + 9, y: b.y + b.h, face: b.face, s: 1.06, state: st, t: b.t, vx: b.vx, kind: 'boy', hair: 'afro', eyes: 'glow', eyeR: 1.3, weapon: null, limb: 4.8, shoulder: 6.2, waist: 4.6, headR: 7 });
+  if (b.reveal > 0) { const ex = r.head[0] + b.face * 4, ey = r.head[1]; c.save(); c.globalAlpha = b.reveal; c.drawImage(glowOf(TWIN_V), ex - 16, ey - 12, 32, 24); c.fillStyle = `rgb(${TWIN_V})`; c.beginPath(); c.arc(ex - b.face * 1.5, ey, 1.6, 0, TAU); c.arc(ex + b.face * 2.4, ey, 1.4, 0, TAU); c.fill(); c.restore(); }
   const hasCake = !this.p.holding && !(cut && (cut.step === 'blown' || cut.split)) && cut && (cut.step === 'offer' || cut.step === 'talk' || cut.step === 'walkin' || (cut.step === 'accept' && cut.t < .8) || cut.step === 'cutit');
   if (hasCake) {
     const hx = st === 'offer' ? (r.arms[0][0] + r.arms[1][0]) / 2 : b.x + 9 + b.face * 12, hy = st === 'offer' ? Math.min(r.arms[0][1], r.arms[1][1]) + 2 : b.y + 30;
@@ -2981,28 +3033,39 @@ PlayScene.prototype.drawHUD = function (c, t) {
   const b = this.boss;
   if (b && !b.dead) {
     const w = 420, x = W / 2 - w / 2, y = 34, f = clamp(b.hp / b.maxHp, 0, 1);
-    txt(c, b.form === 'ogre' ? 'MR JOE  ·  OVERTIME FORM' : 'MR JOE', W / 2, y - 14, 18, 'rgba(255,255,255,.85)', 'center', F_SC);
-    c.fillStyle = 'rgba(255,255,255,.18)'; c.fillRect(x, y, w, 3); c.fillStyle = b.form === 'ogre' ? `rgb(${JOE_RED})` : '#f2f0ec'; c.fillRect(x, y, w * f, 3);
+    const bn = b.twin ? (CONTENT.twin.name || 'THE EVIL TWIN') + (b.phase >= 3 ? '  ·  SERIOUS' : '') : b.form === 'ogre' ? 'MR JOE  ·  OVERTIME FORM' : 'MR JOE';
+    txt(c, bn, W / 2, y - 14, 18, 'rgba(255,255,255,.85)', 'center', F_SC);
+    c.fillStyle = 'rgba(255,255,255,.18)'; c.fillRect(x, y, w, 3); c.fillStyle = b.twin ? `rgb(${TWIN_V})` : b.form === 'ogre' ? `rgb(${JOE_RED})` : '#f2f0ec'; c.fillRect(x, y, w * f, 3);
   }
   if (this.bossTitle > 0) {
     const a = Math.min(1, this.bossTitle, (3.4 - this.bossTitle) * 2);
     c.globalAlpha = a; c.fillStyle = 'rgba(0,0,0,.45)'; c.fillRect(0, H / 2 - 70, W, 120);
     const TT = this.bossTitleText || ['MR JOE', 'keeper of the ninja fairies'];
-    c.shadowColor = `rgb(${JOE_RED})`; c.shadowBlur = 18 * RS; txt(c, TT[0], W / 2, H / 2 - 20, 72, '#f4f2ee', 'center', F_FELL); c.shadowBlur = 0;
+    c.shadowColor = `rgb(${this.bossTitleCol || JOE_RED})`; c.shadowBlur = 18 * RS; txt(c, TT[0], W / 2, H / 2 - 20, 72, '#f4f2ee', 'center', F_FELL); c.shadowBlur = 0;
     txt(c, TT[1], W / 2, H / 2 + 28, 20, 'rgba(240,238,234,.8)', 'center', 'italic ' + F_SERIF);
     c.globalAlpha = 1;
   }
   c.restore();
 };
 PlayScene.prototype.drawDialogue = function (c, t) {
-  const cut = this.cut; if (!cut || cut.step !== 'talk') return;
-  const ls = CONTENT.boy.lines.length ? CONTENT.boy.lines : ['happy birthday'];
+  const cut = this.cut; if (!cut) return;
+  if (cut.step === 'duelCard') {
+    const a = Math.min(1, cut.t * 1.5, (3.6 - cut.t) * 2);
+    c.save(); c.globalAlpha = Math.max(0, a); c.fillStyle = 'rgba(0,0,0,.6)'; c.fillRect(0, H / 2 - 80, W, 150);
+    c.shadowColor = `rgb(${TWIN_V})`; c.shadowBlur = 18 * RS;
+    const card = CONTENT.twin.card || DEFAULT_CONTENT.twin.card, parts = card.split('愛');
+    c.font = 'italic 30px ' + F_SERIF; const wTot = c.measureText(card.replace(/愛/g, '')).width + (parts.length - 1) * 34; let x = W / 2 - wTot / 2;
+    parts.forEach((pt, k) => { txt(c, pt, x, H / 2 - 12, 30, '#f2ecff', 'left', 'italic ' + F_SERIF); c.font = 'italic 30px ' + F_SERIF; x += c.measureText(pt).width; if (k < parts.length - 1) { txt(c, '愛', x + 17, H / 2 - 12, 30, '#fff', 'center', F_JP); x += 34; } });
+    c.shadowBlur = 0; txt(c, 'D U E L', W / 2, H / 2 + 34, 16, `rgba(${TWIN_V},.9)`, 'center', F_SC); c.restore(); return;
+  }
+  if (cut.step !== 'talk' && cut.step !== 'twinTalk' && cut.step !== 'twinwin') return;
+  const ls = cut.lines || (CONTENT.boy.lines.length ? CONTENT.boy.lines : ['happy birthday']);
   const s = (ls[cut.line] || '').slice(0, Math.floor(cut.chars));
   const g = c.createLinearGradient(0, H - 230, 0, H); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.8)');
   c.fillStyle = g; c.fillRect(0, H - 230, W, 230);
-  const nm = (CONTENT.boy.name || 'youknowwho').toUpperCase();
+  const nm = (cut.name || CONTENT.boy.name || 'youknowwho').toUpperCase();
   { c.font = 'italic 30px ' + F_SERIF; let n = 1, cc = ''; for (const w of (ls[cut.line] || '').split(' ')) { const t2 = cc ? cc + ' ' + w : w; if (c.measureText(t2).width > Math.min(W - 140, 820) && cc) { n++; cc = w; } else cc = t2; } cut.nameY = H - 104 - (n - 1) * 38; }
-  txt(c, nm, W / 2, cut.nameY, 15, 'rgba(255,255,255,.55)', 'center', F_SC);
+  txt(c, nm, W / 2, cut.nameY, 15, cut.name ? `rgba(${TWIN_V},.9)` : 'rgba(255,255,255,.55)', 'center', F_SC);
   // word-wrap long lines
   c.font = 'italic 30px ' + F_SERIF; const maxW = Math.min(W - 140, 820), rows = []; let cur = '';
   for (const w of s.split(' ')) { const t2 = cur ? cur + ' ' + w : w; if (c.measureText(t2).width > maxW && cur) { rows.push(cur); cur = w; } else cur = t2; }
@@ -3015,6 +3078,12 @@ PlayScene.prototype.drawDialogue = function (c, t) {
 
 PlayScene.prototype.drawMagic = function (c, t) {
   for (const m of this.magic) {
+    if (m.tele > 0) {
+      const pl = .5 + .5 * Math.sin(t * 22);
+      if (m.k === 'fire') { c.strokeStyle = `rgba(255,140,50,${.4 + .4 * pl})`; c.lineWidth = 2; c.setLineDash([8, 6]); c.beginPath(); c.ellipse(m.x, m.gy - 2, 160, 14, 0, 0, TAU); c.stroke(); c.setLineDash([]); c.globalAlpha = .4 * pl; c.drawImage(glowOf('255,120,40'), m.x - 160, m.gy - 30, 320, 50); c.globalAlpha = 1; }
+      if (m.k === 'ebolt') { c.globalAlpha = .5 + .4 * pl; c.drawImage(glowOf('255,236,110'), m.x - 30, m.gy - 22, 60, 36); c.globalAlpha = 1; c.strokeStyle = `rgb(${TWIN_V})`; c.lineWidth = 2; c.beginPath(); c.ellipse(m.x, m.gy - 1, 34 * (1 - m.tele / .85 * .5), 6, 0, 0, TAU); c.stroke(); c.strokeStyle = `rgba(255,236,110,${.3 + .3 * pl})`; c.lineWidth = 1; c.beginPath(); c.moveTo(m.x, m.gy); c.lineTo(m.x, this.camY); c.stroke(); }
+      continue;
+    }
     if (m.k === 'wind') {
       const a = Math.min(1, m.life / .25);
       c.save(); c.globalAlpha = a * .7; c.drawImage(glowOf('200,236,255'), m.x - 60, m.y - 60, 120, 120); c.globalAlpha = a;
@@ -3480,6 +3549,7 @@ PlayScene.prototype.shatterBoulder = function (q) {
   for (let i = 0; i < 4; i++) this.proj.push({ k: 'rock', owner: 'e', x: q.x, y: q.y - 10, vx: rand(-260, 260), vy: rand(-560, -280), g: 1300, r: 6, life: 2, rot: 0, dmg: 1 });
 };
 PlayScene.prototype.drawBoss = function (c, b, t) {
+  if (b.twin) return this.drawTwinBoss(c, b, t);
   if (b.hidden) return;
   c.save(); c.globalAlpha = b.alpha;
   const bx = b.x + b.w / 2, feet = b.y + b.h;
@@ -3530,6 +3600,371 @@ PlayScene.prototype.drawBoss = function (c, b, t) {
     txt(c, b.say, x, b.y - 40, 20, '#f6eeea', 'center', 'italic ' + F_SERIF);
   }
   c.restore();
+};
+/* =========================================================
+   CHAPTER VI - THE EVIL TWIN
+   the cake guy was the twin all along. lean, long coat, violet eyes,
+   reads her moves, parries, deflects, uses all four elements + shadow clones
+   ========================================================= */
+const TWIN_V = '178,120,255';
+ED.clone = { hp: 1, w: 18, h: 58, s: 1.06, clone: true, drops: [0, 0] };
+function twinRig(x, y) { return { tails: [chainInit(x, y, 7), chainInit(x, y, 6)], anchor: [x, y] }; }
+function twinTick(R, face, dt, t, speed) {
+  if (!R) return;
+  const sp = Math.min(1, Math.abs(speed) / 320);
+  R.tails.forEach((ch, i) => chainUpdate(ch, R.anchor[0] - face * i * 3, R.anchor[1] + i * 2, face, dt, { seg: 6.5, grav: 900 - sp * 600, back: 500 + sp * 1600, wind: -40, flutter: 8 + sp * 20, t: t + i * 1.3, root: [-.55, .8], stiff: .1 }));
+}
+/* o: {x, y(feet), face, s, state, t, p, vx, vy, flash, alpha, R, coatOff, eyesK, phase, ghost, phone} */
+function drawTwin(c, o) {
+  const S = o.s || 1.12, f = o.face || 1, P = rigPose(o);
+  const LEG = 13.8, TOR = 17.5, ARM = 11, HR = 5.7;
+  const hipY = -P.hip * (LEG / 13) * S, tx = Math.sin(P.lean) * f, ty = -Math.cos(P.lean);
+  const nx = tx * TOR * S, ny = hipY + ty * TOR * S, sx = tx * TOR * .86 * S, sy = hipY + ty * TOR * .86 * S;
+  const hr = HR * S, hx = nx + tx * hr * 1.08 + f * 1.2 * S, hy = ny + ty * hr * 1.08;
+  const v = (a, l) => [Math.sin(a) * f * l * S, Math.cos(a) * l * S];
+  const legs = []; let maxFoot = -999;
+  for (let i = 0; i < 2; i++) { const [a0, a1] = P.th[i], k = v(a0, LEG), kn = [k[0], hipY + k[1]], ft = v(a1, LEG), fo = [kn[0] + ft[0], kn[1] + ft[1]]; legs.push([kn, fo]); maxFoot = Math.max(maxFoot, fo[1]); }
+  const shift = o.state === 'dead' ? 0 : -maxFoot;
+  const arms = [];
+  for (let i = 0; i < 2; i++) { const [a0, a1] = P.arm[i], e1 = v(a0, ARM), el = [sx + e1[0], sy + e1[1]], h1 = v(a1, ARM), hd = [el[0] + h1[0], el[1] + h1[1]]; arms.push([el, hd]); }
+  const t = o.t || 0, sp = clamp((o.vx || 0) / 400, -1, 1), px = -ty, py = tx, ox = o.x, oy = o.y + shift;
+  const R = o.R;
+  if (R && !o.ghost) R.anchor = [ox - f * 4 * S + tx * 4 * S, oy + hipY + 2 * S];
+  const shape = (col, dx = 0, dy = 0, withTails = true) => {
+    c.save(); c.translate(dx, dy); c.fillStyle = col; c.strokeStyle = col; c.lineCap = 'round'; c.lineJoin = 'round';
+    if (R && withTails && !o.coatOff) for (const ch of R.tails) ribbon(c, ch, ox, oy, 6 * S, 1.6 * S);
+    const leg = i => { const [kn, fo] = legs[i]; limb(c, [0, hipY], kn, 3.9 * S, 3 * S); limb(c, kn, fo, 3 * S, 2.1 * S); c.beginPath(); c.moveTo(fo[0] - f * 2 * S, fo[1] - 1.6 * S); c.lineTo(fo[0] + f * 5.2 * S, fo[1] - .4 * S); c.lineTo(fo[0] + f * 5 * S, fo[1] + 1 * S); c.lineTo(fo[0] - f * 2.4 * S, fo[1] + 1 * S); c.closePath(); c.fill(); };
+    const arm = i => { const [el, hd] = arms[i]; limb(c, [sx, sy], el, 3 * S, 2.5 * S); limb(c, el, hd, 2.5 * S, 2 * S); c.beginPath(); c.arc(hd[0], hd[1], 1.8 * S, 0, TAU); c.fill(); };
+    leg(1); arm(0);
+    // slim torso
+    const at = (k, w, s2) => [tx * TOR * S * k + px * w * s2, hipY + ty * TOR * S * k + py * w * s2];
+    c.beginPath(); const tp = [at(1, 3.6 * S, -1), at(.86, 5 * S, -1), at(.25, 3.2 * S, -1), at(0, 3.6 * S, -1), at(0, 3.6 * S, 1), at(.25, 3.2 * S, 1), at(.86, 5 * S, 1), at(1, 3.6 * S, 1)];
+    tp.forEach((q, i) => i ? c.lineTo(q[0], q[1]) : c.moveTo(q[0], q[1])); c.closePath(); c.fill();
+    leg(0);
+    // long coat: cinched at the waist, flaring open below, split tails behind
+    if (!o.coatOff) {
+      const hemY = hipY + 19 * S, sw = -sp * 8 * S + Math.sin(t * 4) * 1.2 * S, fl = Math.abs(sp) * 3 * S;
+      const backSh = at(.92, 5.4 * S, -f), frontSh = at(.92, 5.2 * S, f), bw = at(.2, 3.6 * S, -f), fw = at(.2, 3.4 * S, f);
+      c.beginPath(); c.moveTo(backSh[0], backSh[1]);
+      c.quadraticCurveTo(bw[0] - f * 1.2 * S, (backSh[1] + bw[1]) / 2, bw[0], bw[1]);
+      c.quadraticCurveTo(-f * 7 * S, hipY + 6 * S, -f * (11 * S + fl) + sw, hemY + 1 * S);
+      c.lineTo(-f * 6 * S + sw * .8, hemY - 3.5 * S); c.lineTo(-f * 2.5 * S + sw * .7, hemY + 1 * S);
+      c.lineTo(f * .5 * S + sw * .6, hemY - 3 * S);
+      c.quadraticCurveTo(f * 1.2 * S, hipY + 4 * S, fw[0], fw[1]);
+      c.quadraticCurveTo(fw[0] + f * .8 * S, (frontSh[1] + fw[1]) / 2, frontSh[0], frontSh[1]);
+      c.closePath(); c.fill();
+      // high collar framing the jaw
+      c.beginPath(); c.moveTo(nx - f * 4 * S, ny + 3 * S); c.lineTo(nx - f * 4.4 * S, ny - 7 * S); c.quadraticCurveTo(nx - f * 1 * S, ny - 4 * S, nx + f * 1.8 * S, ny + 1.5 * S); c.closePath(); c.fill();
+    }
+    // neck + head
+    limb(c, [nx, ny], [hx, hy], 3.2 * S, 3 * S);
+    c.beginPath(); c.arc(hx, hy, hr, 0, TAU); c.fill();
+    // neat high-top afro
+    const ax = hx - f * hr * .3, ay = hy - hr * .95, AR = hr * 1.32;
+    c.beginPath(); c.ellipse(ax, ay, AR * .98, AR * .9, f * -.12, 0, TAU); c.fill();
+    for (let i = 0; i < 18; i++) { const a = i / 18 * TAU; if (Math.sin(a) > .5) continue; c.beginPath(); c.arc(ax + Math.cos(a) * AR * .95, ay + Math.sin(a) * AR * .85, AR * .17, 0, TAU); c.fill(); }
+    // half-mask over the jaw
+    c.beginPath(); c.moveTo(hx - f * hr * .2, hy + hr * .05); c.lineTo(hx + f * hr * 1.16, hy + hr * .12); c.lineTo(hx + f * hr * .9, hy + hr * .95); c.lineTo(hx + f * hr * .05, hy + hr * 1.05); c.closePath(); c.fill();
+    arm(1);
+    // sheath at the hip
+    c.lineWidth = 1.8 * S; c.beginPath(); c.moveTo(f * 1 * S, hipY + .5 * S); c.lineTo(-f * 16 * S, hipY + 9 * S); c.stroke();
+    c.restore();
+  };
+  c.save();
+  if (o.alpha != null) c.globalAlpha *= o.alpha;
+  c.translate(ox, oy);
+  if (o.ghost) { shape(o.ghost, 0, 0, false); c.restore(); return { head: [ox + hx, oy + hy] }; }
+  shape(`rgba(${TWIN_V},.55)`, -f * 2, -.5);
+  shape(o.flash > 0 ? '#ece6f6' : INK);
+  // violet streak through the afro + mask edge
+  c.strokeStyle = `rgba(${TWIN_V},.9)`; c.lineWidth = 1.5 * S; c.lineCap = 'round';
+  { const ax = hx - f * hr * .3, ay = hy - hr * .95, AR = hr * 1.32; c.lineWidth = 1.2 * S; c.beginPath(); c.moveTo(ax + f * AR * .55, ay - AR * .62); c.quadraticCurveTo(ax - f * AR * .1, ay - AR * .95, ax - f * AR * .8, ay - AR * .35); c.stroke(); }
+  // violet piping down the coat's opening and hem
+  if (!o.coatOff) { const hemY = hipY + 19 * S, sw = -sp * 8 * S + Math.sin(t * 4) * 1.2 * S, fw = [tx * TOR * S * .2 + px * 3.4 * S * f, hipY + ty * TOR * S * .2 + py * 3.4 * S * f];
+    c.strokeStyle = `rgba(${TWIN_V},.55)`; c.lineWidth = .9 * S; c.beginPath(); c.moveTo(fw[0], fw[1]); c.quadraticCurveTo(f * 1.2 * S, hipY + 4 * S, f * .5 * S + sw * .6, hemY - 3 * S); c.stroke();
+    // belt
+    const b0 = [tx * TOR * S * .22 - px * 3.4 * S, hipY + ty * TOR * S * .22 - py * 3.4 * S], b1 = [tx * TOR * S * .22 + px * 3.4 * S, hipY + ty * TOR * S * .22 + py * 3.4 * S];
+    c.strokeStyle = `rgba(${TWIN_V},.8)`; c.lineWidth = 1.1 * S; c.beginPath(); c.moveTo(b0[0], b0[1]); c.lineTo(b1[0], b1[1]); c.stroke(); }
+  c.strokeStyle = `rgba(${TWIN_V},.45)`; c.lineWidth = .9; c.beginPath(); c.moveTo(hx - f * hr * .2, hy + hr * .05); c.lineTo(hx + f * hr * 1.16, hy + hr * .12); c.stroke();
+  // eyes
+  const k = o.eyesK == null ? 1 : o.eyesK;
+  if (k > 0) {
+    const ex = hx + f * hr * .42, ey = hy - hr * .18, er = 1.15 * S, blaze = (o.phase || 1) >= 3 ? 1.7 : 1;
+    c.globalAlpha *= k * .75; c.drawImage(glowOf(TWIN_V), ex - er * 3.5 * blaze + f * er, ey - er * 2.6 * blaze, er * 7 * blaze, er * 5.2 * blaze); c.globalAlpha /= .75;
+    c.fillStyle = `rgb(${TWIN_V})`;
+    for (const d of [0, 1]) { const x0 = ex + f * d * er * 2.3; c.beginPath(); c.moveTo(x0 - f * er * 1.1, ey + er * .15); c.quadraticCurveTo(x0, ey - er * .75, x0 + f * er * 1.1, ey - er * .35); c.quadraticCurveTo(x0, ey + er * .35, x0 - f * er * 1.1, ey + er * .15); c.fill(); }
+    c.fillStyle = '#f6efff'; c.beginPath(); c.arc(ex + f * er * .2, ey - er * .1, er * .26, 0, TAU); c.fill();
+    if (blaze > 1) { c.strokeStyle = `rgba(${TWIN_V},.7)`; c.lineWidth = .8; c.beginPath(); c.moveTo(ex + f * er * 3.4, ey - er * .3); c.lineTo(ex + f * er * 3.4 - f * 6, ey - er * .3 - 1.5 - Math.sin(t * 9)); c.stroke(); }
+    c.globalAlpha /= k;
+  }
+  // phone glowing in his coat pocket (texting other girls)
+  if (o.phone > 0 && !o.coatOff) { const q = [tx * TOR * S * .25 + f * 3.4 * S, hipY + ty * TOR * S * .25]; c.globalAlpha *= Math.min(1, o.phone * 2); c.drawImage(glowOf('225,210,255'), q[0] - 8, q[1] - 8, 16, 16); c.fillStyle = '#efe6ff'; c.fillRect(q[0] - 1.2 * S, q[1] - 2 * S, 2.4 * S, 4 * S); }
+  // katana with a violet edge
+  const hand = arms[1][1], dw = [Math.sin(P.sw) * f, Math.cos(P.sw)];
+  if (P.sword !== false && o.sword !== false) drawKatana(c, hand, dw, S * .95, f, o.flash > 0 ? '#ece6f6' : INK, t, o.state === 'attack', o.flash > 0, { len: 37, edge: '200,150,255' });
+  c.restore();
+  return { hand: [ox + hand[0], oy + hand[1]], head: [ox + hx, oy + hy] };
+}
+
+/* the twin wears the cake boy's exact look, plus his violet-edged katana */
+function drawTwinBoy(c, o) {
+  const q = { x: o.x, y: o.y, face: o.face, s: 1.06, state: o.state, t: o.t, p: o.p || 0, combo: 0, vx: o.vx || 0, vy: o.vy || 0, flash: o.flash, alpha: o.alpha,
+    kind: 'boy', hair: 'afro', eyes: 'glow', eyeR: 1.3, weapon: null, limb: 4.8, shoulder: 6.2, waist: 4.6, headR: 7, ink: o.ink, noEyes: o.noEyes, eyeCol: o.ink ? null : TWIN_V };
+  const r = drawHuman(c, q);
+  if (o.sword !== false) {
+    const P = rigPose(q);
+    if (P.sword !== false) {
+      c.save(); if (o.alpha != null) c.globalAlpha *= o.alpha;
+      drawKatana(c, r.hand, [Math.sin(P.sw) * o.face, Math.cos(P.sw)], 1.06 * .95, o.face, o.flash > 0 ? '#ece6f6' : (o.ink || INK), o.t, o.state === 'attack', o.flash > 0, { len: 37, edge: '200,150,255' });
+      c.restore();
+    }
+  }
+  return r;
+}
+
+/* ---------------- story ---------------- */
+PlayScene.prototype.cutTalk = function (c, dt, lines, onDone) {
+  const s = lines[c.line] || '';
+  const before = Math.floor(c.chars); c.chars = Math.min(s.length, c.chars + dt * 28); if (Math.floor(c.chars) > before && Math.floor(c.chars) % 2) sfx('type');
+  const adv = wasPressed('confirm') || wasPressed('attack') || wasPressed('jump') || this.tapped; this.tapped = false;
+  if (adv) { if (c.chars < s.length) c.chars = s.length; else if (c.line < lines.length - 1) { c.line++; c.chars = 0; } else onDone(); }
+};
+PlayScene.prototype.updateTwinCut = function (dt) {
+  const c = this.cut, p = this.p, boy = this.boy, b = this.boss;
+  switch (c.step) {
+    case 'reveal':
+      if (!c.hush) { c.hush = true; setMusic(null); }
+      boy.reveal = smooth(c.t / 1.5); boy.face = p.x > boy.x ? 1 : -1; boy.st = 'idle';
+      if (c.t > .9 && !c.sting) { c.sting = true; sfx('twinReveal'); }
+      if (c.t > 1.6 && !boy.twin) { boy.twin = true; boy.R = twinRig(boy.x, boy.y); this.flash = .8; this.shake(10, .5); fxRing(boy.x + 9, boy.y + 30, 120, .8, `rgba(${TWIN_V},`); for (let i = 0; i < 24; i++) fx({ k: 'cglow', col: TWIN_V, x: boy.x + 9 + rand(-20, 20), y: boy.y + rand(0, 60), vx: rand(-120, 120), vy: rand(-160, -20), life: rand(.5, 1), r: rand(6, 12) }); }
+      if (c.t > 2.5) { c.step = 'twinTalk'; c.t = 0; c.line = 0; c.chars = 0; c.lines = CONTENT.twin.lines && CONTENT.twin.lines.length ? CONTENT.twin.lines : DEFAULT_CONTENT.twin.lines; c.name = CONTENT.twin.name || 'THE EVIL TWIN'; }
+      return true;
+    case 'twinTalk':
+      boy.phone = Math.max(0, (boy.phone || 0) - dt); if (/girls/i.test(c.lines[c.line] || '')) boy.phone = 1;
+      this.cutTalk(c, dt, c.lines, () => { c.step = 'duelCard'; c.t = 0; setMusic('twin'); sfx('roar'); });
+      return true;
+    case 'duelCard': if (c.t > 3.6) this.startDuel(); return true;
+    case 'twinwin':
+      this.cutTalk(c, dt, c.lines, () => { c.step = 'twinfade'; c.t = 0; sfx('twinReveal'); });
+      return true;
+    case 'twinfade':
+      if (b) { b.alpha = Math.max(0, 1 - c.t / 1.6); if (Math.random() < .8) fx({ k: 'cglow', col: TWIN_V, x: b.x + rand(0, b.w), y: b.y + rand(0, b.h), vx: rand(-20, 20), vy: rand(-140, -60), g: -40, life: rand(.6, 1.2), r: rand(5, 10) }); }
+      if (c.t > 1.5) this.white = Math.min(1, this.white + dt * .6);
+      if (this.white >= 1 && !c.shown) { c.shown = true; save.finished = true; save.twinBeaten = true; writeSave(); showEnding(); }
+      return true;
+  }
+  return false;
+};
+PlayScene.prototype.startDuel = function () {
+  const boy = this.boy, ar = this.L.arena, p = this.p;
+  const x = clamp(boy ? boy.x + 9 : p.x + 160, ar.x0 + 60, ar.x1 - 60);
+  const b = { twin: true, x: x - 9, y: ar.y - 58, w: 18, h: 58, vx: 0, vy: 0, hp: 60, maxHp: 60, face: sign(p.x - x) || -1, st: 'intro', stT: 1.2, t: 0, phase: 1, ki: 20, flash: 0, inv: 0,
+    alpha: 1, dead: false, hidden: false, onGround: false, R: (boy && boy.R) || twinRig(x, ar.y - 40), cd: { react: 0, clone: 5, dash: 1, taunt: 4 }, nextDrop: 48, say: null, sayT: 0, phone: 0, moveTo: x };
+  this.boss = b; this.boy = null; this.bossDead = false; this.locked = true;
+  if (!this.walls) { this.walls = [{ x: ar.x0 - 40, y: -800, w: 40, h: 2000, t: 0, wall: true }, { x: ar.x1, y: -800, w: 40, h: 2000, t: 0, wall: true }]; this.L.solids.push(...this.walls); }
+  for (const w of this.walls) w.off = false;
+  p.x = clamp(p.x, ar.x0 + 20, ar.x1 - 40); p.ctrl = true; p.auto = 0; p.holding = false; p.dead = false; p.hp = p.maxHp; p.inv = 1;
+  this.mode = 'play'; this.cut = null; this.ki = Math.max(this.ki, 60); this.ogreCd = 6;
+  this.bossTitle = 3.2; this.bossTitleText = [CONTENT.twin.name || 'THE EVIL TWIN', "he's Italian too"]; this.bossTitleCol = TWIN_V;
+  showControls(true); releaseAll();
+};
+PlayScene.prototype.twinDefeated = function () {
+  const b = this.boss; b.dead = true; b.st = 'kneel'; b.vx = 0;
+  this.proj = []; this.magic = this.magic.filter(m => !m.hostile);
+  for (const e of this.enemies) if (!e.dead) { e.dead = true; e.deadT = 9; this.poof(e.x + e.w / 2, e.y + e.h / 2); }
+  this.slowmo(.3, 1.2); this.flash = .9; this.shake(16, .8); sfx('boom'); fxRing(b.x + b.w / 2, b.y + 32, 200, .9, `rgba(${TWIN_V},`);
+  { const p = this.p, bc = b.x + b.w / 2, d = sign(p.x + 8 - bc) || -1, ar = this.L.arena; if (Math.abs(p.x + 8 - bc) < 80) p.x = clamp(bc + d * 80 - 8, ar.x0 + 10, ar.x1 - 26); p.vx = 0; p.face = -d; b.face = d; }
+  this.mode = 'cut'; releaseAll(); showControls(false);
+  const wl = CONTENT.twin.winLines && CONTENT.twin.winLines.length ? CONTENT.twin.winLines : DEFAULT_CONTENT.twin.winLines;
+  this.cut = { t: 0, step: 'twinwin', line: 0, chars: 0, lines: wl, name: CONTENT.twin.name || 'THE EVIL TWIN' };
+  setMusic(null);
+};
+PlayScene.prototype.poof = function (x, y) {
+  sfx('poof');
+  for (let i = 0; i < 14; i++) fx({ k: 'cglow', col: TWIN_V, x: x + rand(-10, 10), y: y + rand(-20, 20), vx: rand(-140, 140), vy: rand(-140, 60), drag: .92, life: rand(.3, .6), r: rand(8, 16) });
+};
+
+/* ---------------- the duel ---------------- */
+PlayScene.prototype.hitTwin = function (dmg, dir) {
+  const b = this.boss, p = this.p;
+  if (b.dead || b.inv > 0 || b.st === 'intro' || b.st === 'backstep') return;
+  if (this._meleeHit && b.st === 'parry' && sign(p.x + 8 - (b.x + b.w / 2)) === b.face) {
+    sfx('parry'); fxSpark(b.x + b.w / 2 + b.face * 14, b.y + 26, 14, 380); this.freeze = .09; this.shake(7, .2);
+    p.vx = -sign(b.x + b.w / 2 - p.x - 8) * 340; p.stuck = .35; p.atkT = 0; p.comboT = 0;
+    b.st = 'counter'; b.stT = .14; b.counterHit = true; this.showMove('Parried!');
+    if (Math.random() < .5) this.bossSay(pick(['Troppo lento.', 'Predictable.', 'Ciao.']), 1.2);
+    return;
+  }
+  this.addKi(5);
+  b.hp -= dmg; b.flash = .1; b.inv = .07; b.vx += dir * 80; sfx('hit'); sfx('cut');
+  fxSpark(b.x + b.w / 2, b.y + 26, 5); for (let i = 0; i < 5; i++) fx({ k: 'cglow', col: TWIN_V, x: b.x + b.w / 2, y: b.y + 26, vx: rand(-120, 120), vy: rand(-120, 40), life: .3, r: 6 });
+  this.freeze = .04; this.shake(4, .1);
+  if (b.hp <= b.nextDrop && b.hp > 0) {
+    b.nextDrop -= 14; const ar = this.L.arena, ax = clamp(p.x + 8, ar.x0 + 60, ar.x1 - 60);
+    this.picks.push({ k: 'heart', x: ax, y: ar.y - 260, vx: 0, vy: 0, w: 14, h: 14, age: 0 });
+    for (let i = 0; i < 3; i++) this.picks.push({ k: 'star', x: ax + rand(-40, 40), y: ar.y - 260, vx: rand(-80, 80), vy: -100, w: 12, h: 12, age: 0 });
+  }
+  const ph = b.hp > 40 ? 1 : b.hp > 19 ? 2 : 3;
+  if (ph !== b.phase && b.hp > 0) {
+    b.phase = ph; sfx('roar'); this.shake(10, .4); fxRing(b.x + b.w / 2, b.y + 30, 150, .6, `rgba(${TWIN_V},`);
+    if (ph === 3) { this.bossSay('Va bene. No more games.', 2.2); }
+    else this.bossSay('Now it gets fun, Dottoressa.', 2);
+    b.st = 'neutral'; b.stT = .5;
+  }
+  if (b.hp <= 0) this.twinDefeated();
+};
+PlayScene.prototype.twinBackstep = function () {
+  const b = this.boss; b.st = 'backstep'; b.stT = .32; b.vx = -b.face * 430; b.vy = -320; b.inv = .3; sfx('dash');
+  for (let i = 0; i < 6; i++) fx({ k: 'cglow', col: TWIN_V, x: b.x + b.w / 2, y: b.y + rand(10, 60), vx: b.face * 60, vy: 0, life: .3, r: 8 });
+};
+PlayScene.prototype.twinCast = function (adx) {
+  const b = this.boss;
+  const pool = b.phase === 1 ? ['wind'] : b.phase === 2 ? ['wind', 'fire', 'ice'] : ['wind', 'fire', 'ice', 'bolt', 'bolt'];
+  let k;
+  if (adx < 170 && pool.includes('fire') && Math.random() < .65) k = 'fire';
+  else if (adx > 300) k = pick(pool.filter(x => x !== 'fire')) || 'wind';
+  else k = pick(pool);
+  b.castEl = ELEMS.find(e => e.k === k); b.st = 'castW'; b.stT = .55; b.ki = 0; b.vx = 0;
+  fx({ k: 'kanji', s: b.castEl.kan, col: b.castEl.rgb, x: b.x + b.w / 2, y: b.y - 36, vy: -30, life: 1 });
+  sfx('tele');
+};
+PlayScene.prototype.twinRelease = function () {
+  const b = this.boss, p = this.p, E = b.castEl, bcx = b.x + b.w / 2, gy = b.y + b.h;
+  sfx(E.k); this.shake(5, .2);
+  if (E.k === 'wind') this.proj.push({ k: 'twind', owner: 'e', x: bcx + b.face * 24, y: b.y + 30, vx: b.face * 640, vy: 0, g: 0, r: 26, life: 1.8, rot: 0, dmg: 1, face: b.face });
+  else if (E.k === 'fire') this.magic.push({ k: 'fire', hostile: true, tele: .45, x: bcx, y: gy - 20, gy, t: 0, life: 1.6, hit: new Set(), tongues: [], parts: [], spawnT: 0 });
+  else if (E.k === 'ice') this.magic.push({ k: 'ice', hostile: true, x: bcx, gy, face: b.face, t: 0, life: 2, spikes: [], next: 0, hit: new Set(), parts: [], shattered: false });
+  else if (E.k === 'bolt') {
+    const xs = [p.x + 8]; if (b.phase >= 3) xs.push(p.x + 8 + p.vx * .7 + (Math.random() < .5 ? -1 : 1) * 70);
+    for (const x of xs) { const g = groundAt(this.L.solids, x, p.y, 300); this.magic.push({ k: 'ebolt', hostile: true, tele: .85, x, gy: g ? g.y : p.y + p.h, t: 0, life: .5 }); }
+  }
+};
+PlayScene.prototype.spawnClones = function () {
+  const b = this.boss, p = this.p, ar = this.L.arena, n = b.phase >= 3 ? 3 : 2;
+  for (let i = 0; i < n; i++) {
+    const side = i % 2 ? 1 : -1, x = clamp(p.x + 8 + side * rand(150, 230), ar.x0 + 30, ar.x1 - 30);
+    const e = this.mkEnemy('clone', x, ar.y); e.life = 4.2 + i * .3; e.st = 'chase'; e.seen = true; this.enemies.push(e); this.poof(x, ar.y - 32);
+  }
+  this.bossSay(pick(['Which one is real?', 'Due, tre, quattro...', 'Like he does, but annoying.']), 1.6);
+};
+PlayScene.prototype.aiClone = function (e, dt, dx, adx, alive) {
+  e.life -= dt;
+  if (e.life <= 0) { e.dead = true; e.deadT = 9; this.poof(e.x + e.w / 2, e.y + e.h / 2); return; }
+  const p = this.p;
+  switch (e.st) {
+    case 'chase': case 'patrol': case 'pursue': e.face = sign(dx) || e.face; e.vx = alive ? e.face * 330 : 0; if (alive && adx < 64 && Math.abs(p.y + p.h - (e.y + e.h)) < 70) { e.st = 'wind'; e.stT = .28; e.vx = 0; } break;
+    case 'wind': e.vx = 0; if (e.stT <= 0) { e.st = 'atk'; e.stT = .14; e.vx = e.face * 220; sfx('slash'); } break;
+    case 'atk': { e.vx = approach(e.vx, 0, 900 * dt); const hb = { x: e.face > 0 ? e.x + e.w - 4 : e.x - 62, y: e.y + 6, w: 66, h: e.h - 8 }; if (alive && overlap(hb, p)) this.hurtPlayer(1, e.x + e.w / 2); if (e.stT <= 0) { e.st = 'rec'; e.stT = .45; } break; }
+    case 'rec': e.vx = 0; if (e.stT <= 0) e.st = 'chase'; break;
+  }
+};
+PlayScene.prototype.updateTwin = function (dt) {
+  const b = this.boss, p = this.p, ar = this.L.arena;
+  b.t += dt; if (b.flash > 0) b.flash -= dt; if (b.inv > 0) b.inv -= dt; if (b.sayT > 0) b.sayT -= dt; if (b.burn > 0) b.burn -= dt;
+  b.phone = Math.max(0, b.phone - dt); if (b.sayT > 0 && b.sayT < 1.6 && Math.random() < .01) b.phone = .8;
+  for (const k in b.cd) b.cd[k] -= dt;
+  if (this.bossTitle > 0) this.bossTitle -= dt;
+  twinTick(b.R, b.face, dt, b.t, b.vx);
+  if (b.dead) { b.vx = 0; b.vy = Math.min(MAXFALL, b.vy + GRAV * dt); moveBody(b, dt, this.L.solids); return; }
+  if (b.frozen > 0) { b.frozen -= dt; dt *= .25; }
+  if (Math.random() < dt * (3 + b.phase * 3)) fx({ k: 'cglow', col: TWIN_V, x: b.x + rand(0, b.w), y: b.y + rand(10, b.h), vx: rand(-10, 10), vy: rand(-70, -30), life: rand(.4, .8), r: rand(4, 8) });
+  b.trailT = (b.trailT || 0) - dt;
+  if ((b.st === 'dash' || b.st === 'backstep') && b.trailT <= 0) { b.trailT = .03; (b.trail = b.trail || []).push({ x: b.x, y: b.y, face: b.face, t: b.t, st: b.st, life: .28 }); }
+  if (b.trail) { for (const g of b.trail) g.life -= dt; b.trail = b.trail.filter(g => g.life > 0); }
+  const alive = !p.dead && this.mode === 'play';
+  const pcx = p.x + 8, bcx = b.x + b.w / 2, dx = pcx - bcx, adx = Math.abs(dx);
+  const spd = [1, 1, 1.12, 1.28][b.phase];
+  b.ki = Math.min(100, b.ki + dt * (5 + b.phase * 3.5));
+  b.stT -= dt * spd;
+  const face = () => { b.face = sign(dx) || b.face; };
+  switch (b.st) {
+    case 'intro': b.vx = 0; face(); if (b.stT <= 0) { b.st = 'neutral'; b.stT = .3; } break;
+    case 'neutral': {
+      face();
+      const pq = p.atkT > 0 ? 1 - p.atkT / p.atkDur : 1;
+      // reactions: he reads her
+      if (alive && b.onGround && b.cd.react <= 0 && p.atkT > 0 && pq < .45 && adx < 125 && !p.plunge) {
+        const r = Math.random(), pp = [0, .25, .35, .45][b.phase];
+        b.cd.react = [0, 1.5, 1.1, .8][b.phase];
+        if (r < pp) { b.st = 'parry'; b.stT = .5; b.vx = 0; sfx('select'); break; }
+        if (r < pp + .3) { this.twinBackstep(); break; }
+      }
+      if (alive && b.onGround && ((p.dashT > 0 || p.iaiT > 0) && adx < 230 && sign(p.vx) === -sign(dx)) && Math.random() < .55) { b.vy = -800; b.vx = -sign(dx) * 140; sfx('jump'); }
+      if (alive && b.onGround && Math.random() < .5) for (const m of this.magic) if (m.k === 'wind' && !m.hostile && sign(m.vx) === -sign(m.x - bcx) && Math.abs(m.x - bcx) < 200) { b.vy = -820; sfx('jump'); break; }
+      if (b.stT > 0) { const sp = [0, 220, 260, 310][b.phase], d = b.moveTo - bcx; b.vx = approach(b.vx, Math.abs(d) < 10 ? 0 : sign(d) * sp, 1600 * dt); break; }
+      b.stT = rand(.16, .34);
+      if (!alive) { b.vx = approach(b.vx, 0, 1200 * dt); break; }
+      const punish = (p.atkT > 0 && pq > .7) || p.castT > 0 || p.hurtT > 0 || p.stuck > 0;
+      if (b.ki >= 100 && Math.random() < .7) { this.twinCast(adx); break; }
+      if (b.phase >= 2 && b.cd.clone <= 0 && Math.random() < .45) { b.st = 'cloneW'; b.stT = .55; b.vx = 0; b.cd.clone = b.phase >= 3 ? 8 : 11; sfx('tele'); break; }
+      if (punish && adx < 320 && b.cd.dash <= 0) { b.st = 'dashW'; b.stT = .32; b.vx = 0; b.cd.dash = 1.4; break; }
+      if (adx < 95) { if (Math.random() < .72) { b.st = 'swind'; b.stT = [0, .3, .25, .2][b.phase]; b.combo = 0; b.comboMax = b.phase + (Math.random() < .4 ? 1 : 0); b.counterHit = false; } else this.twinBackstep(); break; }
+      if (adx > 360 && b.cd.dash <= 0 && Math.random() < .4) { b.st = 'dashW'; b.stT = .38; b.vx = 0; b.cd.dash = 1.8; break; }
+      if (b.cd.taunt <= 0 && Math.random() < .25) { b.cd.taunt = 7; this.bossSay(pick(CONTENT.twin.taunts && CONTENT.twin.taunts.length ? CONTENT.twin.taunts : DEFAULT_CONTENT.twin.taunts), 2.2); b.phone = 2; }
+      const pd = p.hp <= 3 ? 55 : [0, 190, 150, 110][b.phase];
+      b.moveTo = clamp(pcx - (sign(dx) || 1) * pd + rand(-25, 25), ar.x0 + 30, ar.x1 - 30);
+      break;
+    }
+    case 'swind': face(); b.vx = approach(b.vx, 0, 2000 * dt); if (b.stT <= 0) { b.st = 'sstrike'; b.stT = .14; b.vx = b.face * 280; sfx('slash'); b.hitP = false; } break;
+    case 'counter': b.vx = 0; face(); if (b.stT <= 0) { b.st = 'sstrike'; b.stT = .16; b.vx = b.face * 320; sfx('slash2'); b.hitP = false; b.combo = 99; } break;
+    case 'sstrike': {
+      b.vx = approach(b.vx, 0, 1500 * dt);
+      const hb = { x: b.face > 0 ? b.x + b.w - 4 : b.x - 70, y: b.y + 6, w: 74, h: b.h - 8 };
+      if (alive && !b.hitP && overlap(hb, p)) { b.hitP = true; this.hurtPlayer(b.counterHit ? 2 : 1, bcx, 1.2); }
+      if (b.stT <= 0) { b.combo++; if (b.combo < (b.comboMax || 1)) { b.st = 'swind'; b.stT = .15; } else { b.st = 'rec'; b.stT = .38; b.counterHit = false; } }
+      break;
+    }
+    case 'parry': b.vx = 0; face(); if (b.stT <= 0) { b.st = 'neutral'; b.stT = .1; } break;
+    case 'backstep': if (b.onGround && b.stT <= 0) { b.st = 'neutral'; b.stT = .1; } break;
+    case 'dashW': face(); b.vx = 0; if (b.stT <= 0) { b.st = 'dash'; b.stT = .3; b.vx = b.face * 800; b.hitP = false; sfx('dash'); } break;
+    case 'dash':
+      if (alive && !b.hitP && overlap(b, p)) { b.hitP = true; this.hurtPlayer(1, bcx, 1.2); }
+      if (b.stT <= 0 || (b.face > 0 && b.x + b.w > ar.x1 - 10) || (b.face < 0 && b.x < ar.x0 + 10)) { b.st = 'rec'; b.stT = .35; b.vx = 0; }
+      break;
+    case 'castW': face(); b.vx = 0; if (b.stT <= 0) { this.twinRelease(); b.st = 'rec'; b.stT = .4; } break;
+    case 'cloneW': b.vx = 0; if (b.stT <= 0) { this.spawnClones(); b.st = 'rec'; b.stT = .3; } break;
+    case 'rec': b.vx = approach(b.vx, 0, 1600 * dt); b.cd.react = Math.max(b.cd.react, .2); if (b.stT <= 0) { b.st = 'neutral'; b.stT = .05; } break;
+  }
+  b.vy = Math.min(MAXFALL, b.vy + GRAV * dt);
+  moveBody(b, dt, this.L.solids);
+};
+/* hostile spells reuse the player's spell visuals; only the targets differ */
+PlayScene.prototype.updateHostileMagic = function (m, dt) {
+  const p = this.p, alive = !p.dead && this.mode === 'play';
+  if (m.k === 'fire' && m.R && !m.hitP && alive && Math.abs(p.x + 8 - m.x) < m.R && Math.abs(p.y + p.h - m.gy) < 90) { m.hitP = true; this.hurtPlayer(2, m.x, 1.3); }
+  if (m.k === 'ice' && !m.hitP && alive) for (const s of m.spikes) if (Math.abs(p.x + 8 - s.x) < 26 && Math.abs(p.y + p.h - s.y) < 60) { m.hitP = true; if (this.hurtPlayer(1, s.x, .6)) p.slowT = 1.6; break; }
+  if (m.k === 'ebolt' && !m.struck) {
+    m.struck = true; sfx('bolt'); this.flash = Math.max(this.flash, .3); this.shake(8, .25);
+    if (alive && Math.abs(p.x + 8 - m.x) < 38) this.hurtPlayer(2, m.x, 1);
+    m.k = 'bolt'; m.pts = [[m.x, m.gy - 30], [m.x, m.gy]]; m.sky = [m.x, this.camY - 20]; m.life = .45;
+    fxSpark(m.x, m.gy - 4, 12, 280); fxDust(m.x, m.gy, 8);
+  }
+};
+PlayScene.prototype.drawTwinBoss = function (c, b, t) {
+  if (b.trail) for (const g of b.trail) drawTwinBoy(c, { x: g.x + b.w / 2, y: g.y + b.h, face: g.face, state: g.st === 'dash' ? 'iai' : 'air', t: g.t, noEyes: true, ink: `rgba(${TWIN_V},${(g.life / .28 * .4).toFixed(3)})` });
+  const bx = b.x + b.w / 2, feet = b.y + b.h;
+  const tele = b.st === 'swind' || b.st === 'dashW' || b.st === 'castW' || b.st === 'cloneW' || b.st === 'counter';
+  if (tele) { c.save(); c.globalAlpha = .45 + .35 * Math.sin(t * 25); c.drawImage(glowOf(b.st === 'castW' && b.castEl ? b.castEl.rgb : TWIN_V), bx - 40, b.y - 4, 80, 80); c.restore(); }
+  if (b.st === 'dashW') { const ar = this.L.arena; c.fillStyle = `rgba(${TWIN_V},${.35 + .35 * Math.sin(t * 30)})`; c.fillRect(b.face > 0 ? b.x + b.w : ar.x0, feet - 3, b.face > 0 ? ar.x1 - b.x - b.w : b.x - ar.x0, 3); }
+  let st = 'idle', q = 0;
+  switch (b.st) {
+    case 'swind': st = 'windup'; break; case 'counter': st = 'windup'; break; case 'sstrike': st = 'attack'; q = .55; break;
+    case 'parry': st = 'guard'; break; case 'backstep': st = 'air'; break; case 'dashW': st = 'crouch'; break; case 'dash': st = 'iai'; break;
+    case 'castW': case 'cloneW': st = 'sign'; break; case 'kneel': st = 'hurt'; break; case 'intro': st = 'idle'; break;
+    default: st = !b.onGround ? 'air' : Math.abs(b.vx) > 40 ? 'run' : 'idle';
+  }
+  drawTwinBoy(c, { x: bx, y: feet, face: b.face, state: st, t: b.t, p: q, vx: b.vx, vy: b.vy, flash: b.flash, alpha: b.alpha });
+  if (b.st === 'sstrike') drawSharpSlash(c, bx + b.face * 6, b.y + 26, b.face, -1.9, .9, .35, 46, TWIN_V);
+  if (b.st === 'parry') { c.save(); c.globalAlpha = .6 + .3 * Math.sin(t * 20); c.strokeStyle = `rgb(${TWIN_V})`; c.lineWidth = 2; c.beginPath(); c.arc(bx + b.face * 14, b.y + 26, 22, b.face > 0 ? -1.2 : Math.PI - 1.2 + 0, b.face > 0 ? 1.2 : Math.PI + 1.2); c.stroke(); c.restore(); }
+  if (b.frozen > 0) drawIceBlock(c, b.x - 8, b.y - 8, b.w + 16, b.h + 10, t, Math.min(1, b.frozen * 3));
+  if (b.burn > 0) { const k = Math.min(1, b.burn); drawFlame(c, b.x + b.w * .3, feet, 12, 30 * k, t, 3, k); drawFlame(c, b.x + b.w * .8, feet, 10, 24 * k, t, 7, k); }
+  if (b.sayT > 0 && b.say) {
+    c.save(); c.globalAlpha = Math.min(1, b.sayT * 2) * Math.max(.6, b.alpha);
+    c.font = 'italic 20px ' + F_SERIF; const w = c.measureText(b.say).width;
+    const x = clamp(bx, this.camX + w / 2 + 20, this.camX + W - w / 2 - 20);
+    c.fillStyle = 'rgba(0,0,0,.6)'; c.fillRect(x - w / 2 - 12, b.y - 60, w + 24, 32); c.fillStyle = `rgba(${TWIN_V},.9)`; c.fillRect(x - w / 2 - 12, b.y - 60, 3, 32);
+    txt(c, b.say, x, b.y - 44, 20, '#f2ecff', 'center', 'italic ' + F_SERIF); c.restore();
+  }
 };
 /* =========================================================
    SCENES - game manager, title, intro, chapter cards, overlays, ending
@@ -3646,7 +4081,7 @@ function videoEmbed(u) {
   m = /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|embed\/))([\w-]{11})/.exec(u); if (m) return `https://www.youtube.com/embed/${m[1]}`;
   return '';
 }
-function showEnding() {
+function showEnding(opts = {}) {
   showControls(false); setAmbience(null); setMusic('ending');
   const E = CONTENT.ending;
   const root = el('div'); root.id = 'ending'; root.className = 'grain';
@@ -3686,6 +4121,18 @@ function showEnding() {
   later(t0, () => { hb.classList.add('in'); burst(140); sfx('reveal'); }); t0 += 1600;
   const again = btn('Play again', () => { resetProgress(); stop = true; root.remove(); Game.go(new TitleScene()); }, 'btn dark');
   again.style.opacity = 0; again.style.transition = 'opacity 1s'; wrap.appendChild(again); later(t0, () => again.style.opacity = 1);
+  // the twin's little secret, 5 seconds after the page settles
+  if (save.twinBeaten || opts.extra) {
+    const xb = btn(E.extraLabel || 'a little something extra', () => {
+      sfx('select'); const o = el('div'); o.id = 'xtra'; const pol = el('div', 'pol'); const u = mediaUrl(E.extraPhoto);
+      if (u) { const im = document.createElement('img'); im.src = u; im.alt = ''; pol.appendChild(im); } else pol.appendChild(el('div', 'ph', 'picture goes here'));
+      pol.appendChild(el('p', '', E.extraText || DEFAULT_CONTENT.ending.extraText)); o.appendChild(pol);
+      o.appendChild(btn('close', () => { o.classList.remove('in'); setTimeout(() => o.remove(), 600); }));
+      o.addEventListener('click', ev => { if (ev.target === o) { o.classList.remove('in'); setTimeout(() => o.remove(), 600); } });
+      document.body.appendChild(o); requestAnimationFrame(() => o.classList.add('in'));
+    }, 'btn dark extra');
+    wrap.appendChild(xb); later(t0 + 5000, () => xb.classList.add('in'));
+  }
   document.body.appendChild(root);
   // petals on white
   const pctx = pc.getContext('2d'); let stop = false; const ps = [];
@@ -3716,7 +4163,9 @@ class TitleScene {
   enter() {
     const T = $('title'); T.classList.remove('hide');
     const hasProg = save.started && (save.level > 0 || save.cp >= 0);
-    const b = $('tBegin'), c = $('tCont'), s = $('tSnd');
+    const b = $('tBegin'), c = $('tCont'), s = $('tSnd'), tw = $('tTwin');
+    tw.classList.toggle('hide', !save.finished);
+    tw.onclick = () => { unlockAudio(); goFullscreen(); sfx('select'); Game.go(new CardScene(5)); };
     c.classList.toggle('hide', !hasProg);
     b.textContent = hasProg ? 'Start over' : 'Begin';
     c.textContent = `Continue · chapter ${NUMERALS[save.level]}`;
@@ -3806,12 +4255,12 @@ class IntroScene {
 
 /* ---------------- chapter card ---------------- */
 class CardScene {
-  constructor(i) { this.i = clamp(i, 0, 4); this.t = 0; this.ch = CHAPTERS[this.i]; this.sc = getScenery(this.ch.theme); weatherSet(this.sc.th.weather, this.sc.th.petalTint); }
+  constructor(i) { this.i = clamp(i, 0, 5); this.t = 0; this.ch = CHAPTERS[this.i]; this.sc = getScenery(this.ch.theme); weatherSet(this.sc.th.weather, this.sc.th.petalTint); }
   enter() { setMusic(this.ch.music); setAmbience(this.sc.th.amb); showControls(false); }
   tap() { if (this.t > .8) this.skip = true; }
   update(dt) {
     this.t += dt; weatherUpdate(dt, 6 * dt, 0);
-    if ((this.t > 3.6 || this.skip || (this.t > .8 && (wasPressed('confirm') || wasPressed('jump') || wasPressed('attack')))) && !this.gone) { this.gone = true; Game.go(new PlayScene(this.i)); }
+    if ((this.t > 3.6 || this.skip || (this.t > .8 && (wasPressed('confirm') || wasPressed('jump') || wasPressed('attack')))) && !this.gone) { this.gone = true; Game.go(this.i === 5 ? new PlayScene(4, { twinStart: true }) : new PlayScene(this.i)); }
   }
   draw(c) {
     c.setTransform(RS, 0, 0, RS, 0, 0);
@@ -3827,7 +4276,8 @@ class CardScene {
     txt(c, this.ch.name, W / 2, H / 2 + 116, 30, '#efede8', 'center', 'italic ' + F_SERIF);
     { const n = Math.min(4, this.i + 1), E = ELEMS[n - 1], a2 = clamp((this.t - 1) / 1, 0, 1);
       c.globalAlpha = a; c.globalAlpha *= a2;
-      if (this.i >= 4) { txt(c, 'all four elements awaken', W / 2, H / 2 + 160, 17, 'rgba(255,255,255,.75)', 'center', 'italic ' + F_SERIF);
+      if (this.i === 5) { c.shadowColor = 'rgb(190,140,255)'; c.shadowBlur = 14 * RS; txt(c, 'someone owes you a cake', W / 2, H / 2 + 170, 18, 'rgba(225,205,255,.85)', 'center', 'italic ' + F_SERIF); c.shadowBlur = 0; }
+      else if (this.i >= 4) { txt(c, 'all four elements awaken', W / 2, H / 2 + 160, 17, 'rgba(255,255,255,.75)', 'center', 'italic ' + F_SERIF);
         ELEMS.forEach((e, j) => { c.shadowColor = `rgb(${e.rgb})`; c.shadowBlur = 14 * RS; txt(c, e.kan, W / 2 + (j - 1.5) * 44, H / 2 + 196, 26, `rgb(${e.rgb})`, 'center', F_JP); }); c.shadowBlur = 0; }
       else { txt(c, 'new power', W / 2, H / 2 + 160, 15, 'rgba(255,255,255,.6)', 'center', F_SC); c.shadowColor = `rgb(${E.rgb})`; c.shadowBlur = 14 * RS;
         txt(c, E.kan + '  ' + E.name, W / 2, H / 2 + 192, 24, `rgb(${E.rgb})`, 'center', 'italic ' + F_SERIF); c.shadowBlur = 0; }
@@ -3857,7 +4307,9 @@ class CardScene {
     if (q.has('level')) { const i = clamp((parseInt(q.get('level'), 10) || 1) - 1, 0, 4); save.level = i; save.cp = -1; first = new CardScene(i); }
     if (q.has('boss')) { save.level = 4; save.cp = -1; first = new PlayScene(4, { devBoss: true }); }
     if (q.has('cake')) { save.level = 4; first = new PlayScene(4, { devBoss: true }); setTimeout(() => { const s = Game.scene; if (s instanceof PlayScene) { if (!s.boss) s.startBoss(); s.boss.st = 'idle'; s.boss.inv = 0; s.boss.hp = 1; s.hitBoss(5, 1); } }, 1200); }
-    if (q.has('ending')) { setTimeout(showEnding, 300); }
+    if (q.has('ending')) { setTimeout(() => showEnding({ extra: true }), 300); }
+    if (q.has('twin')) first = new CardScene(5);
+    if (q.has('duel')) { first = new PlayScene(4, { twinStart: true }); setTimeout(() => { const s = Game.scene; if (s instanceof PlayScene && s.boy) { s.boy.x = s.p.x + 113; s.cut = { t: 0, step: 'reveal', line: 0, chars: 0 }; } }, 400); }
     if (q.has('sounds')) setTimeout(() => {
       const o = overlay(); const m = el('div', 'menu'); m.style.maxHeight = '100%'; m.style.overflow = 'auto'; m.style.touchAction = 'pan-y';
       m.appendChild(el('h1', '', 'sound board'));

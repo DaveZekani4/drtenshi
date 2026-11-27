@@ -133,6 +133,7 @@ textarea.small{min-height:70px}
     <div class="slot"><label>Chapter III · Snow</label><div class="file" data-file="music.l3" data-accept="audio/*,.mp3,.m4a,.wav,.ogg"></div></div>
     <div class="slot"><label>Chapter IV · Rain</label><div class="file" data-file="music.l4" data-accept="audio/*,.mp3,.m4a,.wav,.ogg"></div></div>
     <div class="slot"><label>Chapter V · Blossom (boss)</label><div class="file" data-file="music.l5" data-accept="audio/*,.mp3,.m4a,.wav,.ogg"></div></div>
+    <div class="slot"><label>Chapter VI · The evil twin duel</label><div class="file" data-file="music.twin" data-accept="audio/*,.mp3,.m4a,.wav,.ogg"></div></div>
     <div class="slot"><label>The white ending</label><div class="file" data-file="music.ending" data-accept="audio/*,.mp3,.m4a,.wav,.ogg"></div></div>
   </div>
 
@@ -145,6 +146,20 @@ textarea.small{min-height:70px}
     </div>
     <label>What he says (one line per bubble)</label><textarea data-k="boy.lines" data-lines class="small"></textarea>
     <p class="note">The last line bursts into petals, then he offers the cake.</p>
+  </div>
+
+  <div class="card">
+    <h2>Chapter VI · The Evil Twin</h2>
+    <p class="hint">After she cuts the cake, the boy's eyes turn violet and he reveals himself. Then the duel card, then the fight. Once she has finished the game, a <b>Chapter VI</b> button on her title screen takes her straight back to the cake.</p>
+    <label>His name on screen</label><input type="text" data-k="twin.name">
+    <label>His reveal speech (one line per bubble)</label><textarea data-k="twin.lines" data-lines class="small"></textarea>
+    <label>The card before the duel</label><input type="text" data-k="twin.card">
+    <p class="note">The 愛 in the card glows white on its own.</p>
+    <label>What he says mid-fight (one per line)</label><textarea data-k="twin.taunts" data-lines class="small"></textarea>
+    <label>His last words when she wins (one line per bubble)</label><textarea data-k="twin.winLines" data-lines class="small"></textarea>
+    <label>Button on the ending page (appears 5 seconds after it settles)</label><input type="text" data-k="ending.extraLabel">
+    <label>The picture it opens</label><div class="file" data-file="ending.extraPhoto" data-accept="image/*"></div>
+    <label>Caption under the picture</label><textarea data-k="ending.extraText" class="small"></textarea>
   </div>
 
   <div class="card">
@@ -194,6 +209,8 @@ textarea.small{min-height:70px}
       <a class="btn" target="_blank" href="/?reward=4">Playlist</a>
       <a class="btn" target="_blank" href="/?boss=1">Boss fight</a>
       <a class="btn" target="_blank" href="/?cake=1">Cake scene</a>
+      <a class="btn" target="_blank" href="/?twin=1">Chapter VI</a>
+      <a class="btn" target="_blank" href="/?duel=1">Twin duel</a>
       <a class="btn" target="_blank" href="/?ending=1">White ending</a>
       <a class="btn" target="_blank" href="/?sounds=1">Sound board</a>
     </div>

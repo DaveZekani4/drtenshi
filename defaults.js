@@ -12,9 +12,17 @@ export const DEFAULT_CONTENT = {
   bombedSub: "don't trust italian bakers",
   ending: {
     lines: ['You are strong, ninja.', 'The lost scrolls of AI 愛 have been digitalised.'],
-    video: null, videoLink: '', driveLink: '', photos: [], birthday: 'Happy Birthday, Mama'
+    video: null, videoLink: '', driveLink: '', photos: [], birthday: 'Happy Birthday, Mama',
+    extraLabel: 'a little something extra', extraPhoto: null, extraText: "I know you'll leave me for this nonsense boy.\nHe is the Evil Twin jsyk!! He's Italian too😭"
   },
-  music: { title: null, l1: null, l2: null, l3: null, l4: null, l5: null, ending: null },
+  twin: {
+    name: 'THE EVIL TWIN',
+    lines: ['I am the evil twin he always talks about.', 'I do all the annoying things. I fall asleep on you. I talk to the 300468373682674638 girls in the world.', 'And you cut my Italian chocolate cake.', 'Mamma mia... la mia torta. Che peccato, Dottoressa.', 'Andiamo.'],
+    taunts: ['Troppo lento, Dottoressa.', 'Sorry, I was texting another girl.', 'I fell asleep. Did you hit me?', 'Ciao, bella. Again.', 'My cake. MY CAKE.', 'You can\u2019t parry this rizz.', 'Che bella... but no.', 'He would never. I always would.'],
+    winLines: ['Guess nothing beats you, Doctor.', 'You are always right.'],
+    card: 'Dr Tenshi, defeat the evil twin to reach the true words of AI 愛'
+  },
+  music: { title: null, l1: null, l2: null, l3: null, l4: null, l5: null, twin: null, ending: null },
   sounds: { herHurt: 'off', herShout: 'off', fairyDie: 'off', ninjaDie: 'off', bigDie: 'off', joeLaugh: 'off', joeScream: 'off' }
 };
 export const SOUND_SLOTS = [
@@ -38,5 +46,6 @@ export const SOUND_SLOTS = [
   ['ogreCall', 'Summon an Ogre button appears', ['ogreCall']],
   ['wind', 'Wind magic', ['wind']], ['fire', 'Fire magic', ['fire']], ['ice', 'Ice magic', ['ice']], ['bolt', 'Lightning magic', ['bolt']],
   ['pickup', 'Picking up a shuriken', ['pick']], ['box', 'Box breaks', ['box'], ['boxhit']],
+  ['twinReveal', 'Evil twin reveal', ['twinReveal']], ['parry', 'Evil twin parries her', ['parry']], ['poof', 'Shadow clone poof', ['poof']],
   ['reveal', 'Letter appears', ['reveal']], ['boom', 'Cake explosion', ['boom']], ['cp', 'Lantern checkpoint', ['cp']]
 ];
